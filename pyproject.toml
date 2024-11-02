@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "my-text-to-sql-poc"
+version = "0.1.0"
+description = ""
+authors = ["morita <morinota416@gmail.com>"]
+readme = "README.md"
+packages = [{include = "my_text_to_sql_poc", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+openai = "^1.53.0"
+langchain = "^0.3.7"
+pytest = "^8.3.3"
+ruff = "^0.7.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
