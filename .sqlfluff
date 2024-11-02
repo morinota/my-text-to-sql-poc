@@ -1,0 +1,8 @@
+[sqlfluff:rules:L003]  # キーワードの小文字化
+capitalisation_policy = lower
+
+[sqlfluff:rules:L010]  # インデントの深さ
+indented_width = 4
+
+[sqlfluff:rules:L014]  # 行の長さ
+line_length = 80

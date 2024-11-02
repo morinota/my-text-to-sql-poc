@@ -10,11 +10,24 @@ packages = [{include = "my_text_to_sql_poc", from = "src"}]
 python = "^3.12"
 openai = "^1.53.0"
 langchain = "^0.3.7"
-pytest = "^8.3.3"
-ruff = "^0.7.2"
 typer = "^0.12.5"
 loguru = "^0.7.2"
+sqlfluff = "^3.2.5"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+ruff = "^0.7.2"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
+[tool.ruff]
+line-length = 120
 
 [build-system]
 requires = ["poetry-core"]
