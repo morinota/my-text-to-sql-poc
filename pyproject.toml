@@ -12,6 +12,8 @@ openai = "^1.53.0"
 langchain = "^0.3.7"
 pytest = "^8.3.3"
 ruff = "^0.7.2"
+typer = "^0.12.5"
+loguru = "^0.7.2"
 
 
 [build-system]
