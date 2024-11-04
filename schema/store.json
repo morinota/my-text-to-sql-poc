@@ -1,0 +1,28 @@
+{
+    "table_name": "store",
+    "columns": [
+      {
+        "name": "store_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "manager_staff_id",
+        "type": "INTEGER",
+        "foreign_key": "staff(staff_id)",
+        "nullable": false
+      },
+      {
+        "name": "address_id",
+        "type": "INTEGER",
+        "foreign_key": "address(address_id)",
+        "nullable": false
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  

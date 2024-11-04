@@ -1,0 +1,10 @@
+{
+    "view_name": "sales_by_store",
+    "columns": [
+      { "name": "store_id", "type": "INTEGER" },
+      { "name": "store", "type": "TEXT" },
+      { "name": "manager", "type": "TEXT" },
+      { "name": "total_sales", "type": "DECIMAL" }
+    ]
+  }
+  

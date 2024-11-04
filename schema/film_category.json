@@ -1,0 +1,23 @@
+{
+    "table_name": "film_category",
+    "columns": [
+      {
+        "name": "film_id",
+        "type": "INTEGER",
+        "primary_key": true,
+        "foreign_key": "film(film_id)"
+      },
+      {
+        "name": "category_id",
+        "type": "INTEGER",
+        "primary_key": true,
+        "foreign_key": "category(category_id)"
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  

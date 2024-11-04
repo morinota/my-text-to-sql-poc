@@ -1,0 +1,20 @@
+{
+    "table_name": "country",
+    "columns": [
+      {
+        "name": "country_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "country",
+        "type": "VARCHAR(50)",
+        "nullable": false
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP"
+      }
+    ]
+  }
+  

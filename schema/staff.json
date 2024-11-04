@@ -1,0 +1,61 @@
+{
+    "table_name": "staff",
+    "columns": [
+      {
+        "name": "staff_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "first_name",
+        "type": "VARCHAR(45)",
+        "nullable": false
+      },
+      {
+        "name": "last_name",
+        "type": "VARCHAR(45)",
+        "nullable": false
+      },
+      {
+        "name": "address_id",
+        "type": "INTEGER",
+        "foreign_key": "address(address_id)",
+        "nullable": false
+      },
+      {
+        "name": "picture",
+        "type": "BLOB"
+      },
+      {
+        "name": "email",
+        "type": "VARCHAR(50)"
+      },
+      {
+        "name": "store_id",
+        "type": "INTEGER",
+        "foreign_key": "store(store_id)",
+        "nullable": false
+      },
+      {
+        "name": "active",
+        "type": "SMALLINT",
+        "default": 1,
+        "nullable": false
+      },
+      {
+        "name": "username",
+        "type": "VARCHAR(16)",
+        "nullable": false
+      },
+      {
+        "name": "password",
+        "type": "VARCHAR(40)"
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  

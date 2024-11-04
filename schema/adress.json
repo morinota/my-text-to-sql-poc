@@ -1,0 +1,45 @@
+{
+    "table_name": "address",
+    "columns": [
+      {
+        "name": "address_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "address",
+        "type": "VARCHAR(50)",
+        "nullable": false
+      },
+      {
+        "name": "address2",
+        "type": "VARCHAR(50)"
+      },
+      {
+        "name": "district",
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      {
+        "name": "city_id",
+        "type": "INTEGER",
+        "foreign_key": "city(city_id)",
+        "nullable": false
+      },
+      {
+        "name": "postal_code",
+        "type": "VARCHAR(10)"
+      },
+      {
+        "name": "phone",
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  

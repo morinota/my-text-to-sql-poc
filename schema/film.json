@@ -1,0 +1,71 @@
+{
+    "table_name": "film",
+    "columns": [
+      {
+        "name": "film_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "title",
+        "type": "VARCHAR(255)",
+        "nullable": false
+      },
+      {
+        "name": "description",
+        "type": "TEXT"
+      },
+      {
+        "name": "release_year",
+        "type": "VARCHAR(4)"
+      },
+      {
+        "name": "language_id",
+        "type": "INTEGER",
+        "foreign_key": "language(language_id)",
+        "nullable": false
+      },
+      {
+        "name": "original_language_id",
+        "type": "INTEGER",
+        "foreign_key": "language(language_id)"
+      },
+      {
+        "name": "rental_duration",
+        "type": "SMALLINT",
+        "default": 3,
+        "nullable": false
+      },
+      {
+        "name": "rental_rate",
+        "type": "DECIMAL(4,2)",
+        "default": 4.99,
+        "nullable": false
+      },
+      {
+        "name": "length",
+        "type": "SMALLINT"
+      },
+      {
+        "name": "replacement_cost",
+        "type": "DECIMAL(5,2)",
+        "default": 19.99,
+        "nullable": false
+      },
+      {
+        "name": "rating",
+        "type": "VARCHAR(10)",
+        "default": "G"
+      },
+      {
+        "name": "special_features",
+        "type": "VARCHAR(100)"
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  

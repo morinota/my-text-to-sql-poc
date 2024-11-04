@@ -1,0 +1,43 @@
+{
+    "table_name": "rental",
+    "columns": [
+      {
+        "name": "rental_id",
+        "type": "INTEGER",
+        "primary_key": true
+      },
+      {
+        "name": "rental_date",
+        "type": "TIMESTAMP",
+        "nullable": false
+      },
+      {
+        "name": "inventory_id",
+        "type": "INTEGER",
+        "foreign_key": "inventory(inventory_id)",
+        "nullable": false
+      },
+      {
+        "name": "customer_id",
+        "type": "INTEGER",
+        "foreign_key": "customer(customer_id)",
+        "nullable": false
+      },
+      {
+        "name": "return_date",
+        "type": "TIMESTAMP"
+      },
+      {
+        "name": "staff_id",
+        "type": "INTEGER",
+        "foreign_key": "staff(staff_id)",
+        "nullable": false
+      },
+      {
+        "name": "last_update",
+        "type": "TIMESTAMP",
+        "nullable": false
+      }
+    ]
+  }
+  
