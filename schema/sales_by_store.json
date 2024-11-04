@@ -1,5 +1,5 @@
 {
-    "view_name": "sales_by_store",
+    "table_name": "sales_by_store",
     "columns": [
       { "name": "store_id", "type": "INTEGER" },
       { "name": "store", "type": "TEXT" },
