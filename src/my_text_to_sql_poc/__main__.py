@@ -32,7 +32,7 @@ def load_prompt(file_path: str = "prompts/generate_sql_prompt.txt") -> str:
 def load_selected_table_schemas(table_names: list[str] = []) -> str:
     """テーブルスキーマを読み込んでフォーマット"""
     formatted_schemas = ""
-    schema_dir = Path("schema/")
+    schema_dir = Path("data/schema/")
     available_tables = [file.stem for file in schema_dir.glob("*.json")]
 
     # 指定されたテーブルがなければ全てのテーブルスキーマを取得
