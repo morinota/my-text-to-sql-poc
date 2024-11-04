@@ -1,0 +1,3 @@
+{
+  "summary": "The \"sales_by_film_category\" table contains data related to film categories and their corresponding total sales figures. \n\nColumns in the table include:\n- **category**: This column holds the names of different film categories.\n- **total_sales**: This column contains the total sales amounts associated with each film category.\n\nPotential use cases for this table include:\n- Analyzing which film categories generate the highest sales.\n- Comparing sales performance across different film categories.\n- Identifying trends in sales data over time for specific categories.\n- Assessing the impact of marketing strategies on sales within various film categories.\n- Informing inventory decisions based on sales performance by category."
+}

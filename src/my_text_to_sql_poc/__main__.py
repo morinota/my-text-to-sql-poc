@@ -76,9 +76,7 @@ def generate_sql_query(
     model = "gpt-4o-mini"
     response = openai.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "user", "content": prompt},
-        ],
+        messages=[{"role": "user", "content": prompt}],
     )
 
     # レスポンスの本文からqueryフィールドとexplanationフィールドを取得
