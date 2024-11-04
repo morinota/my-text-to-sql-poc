@@ -2,3 +2,12 @@ __pycache__/
 .venv/
 src/__pycache__/
 .pytest_cache/s
+
+# Sakila データセットのSQLファイル
+data/sqlite-sakila-schema.sql
+data/sqlite-sakila-insert-data.sql
+data/sqlite-sakila-drop-objects.sql
+data/sqlite-sakila-delete-data.sql
+
+# データベースファイル
+data/sample.db
