@@ -13,6 +13,8 @@ langchain = "^0.3.7"
 typer = "^0.12.5"
 loguru = "^0.7.2"
 sqlfluff = "^3.2.5"
+faiss-cpu = "^1.9.0"
+sentence-transformers = "^3.2.1"
 
 
 [tool.poetry.group.dev.dependencies]
