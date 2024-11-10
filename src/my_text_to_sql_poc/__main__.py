@@ -6,6 +6,7 @@ import openai
 import typer
 from loguru import logger
 
+from my_text_to_sql_poc.service.model_gateway import ModelGateway
 from my_text_to_sql_poc.sql_formatter import format_sql_query
 
 app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
@@ -73,30 +74,13 @@ def generate_sql_query(
     logger.debug(f"Generated prompt: {prompt}")
 
     # OpenAI APIの呼び出し
-    model = "gpt-4o-mini"
-    response = openai.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    model_gateway = ModelGateway()
+    response_text = model_gateway.generate_response(prompt)
 
     # レスポンスの本文からqueryフィールドとexplanationフィールドを取得
-    response_text = response.choices[0].message.content
     response_data = json.loads(response_text)
     sql_query = response_data["query"]
     explanation = response_data.get("explanation", "")
-
-    # 利用tokens数を取得
-    prompt_tokens = response.usage.prompt_tokens
-    completion_tokens = response.usage.completion_tokens
-    total_tokens = response.usage.total_tokens
-
-    # 料金計算
-    input_cost = prompt_tokens * (0.15 / 1_000_000)  # $0.15 / 1M tokens
-    output_cost = completion_tokens * (0.60 / 1_000_000)  # $0.60 / 1M tokens
-    total_cost = input_cost + output_cost
-    # ログに出力
-    logger.info(f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
-    logger.info(f"Cost - Input: ${input_cost:.6f}, Output: ${output_cost:.6f}, Total: ${total_cost:.6f}")
 
     return sql_query, explanation
 

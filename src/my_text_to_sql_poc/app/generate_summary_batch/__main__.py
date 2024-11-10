@@ -7,6 +7,8 @@ import openai
 import typer
 from loguru import logger
 
+from my_text_to_sql_poc.service.model_gateway import ModelGateway  # ModelGatewayをインポート
+
 app = typer.Typer()
 
 # OpenAI APIの設定
@@ -60,7 +62,10 @@ def extract_related_tables(query: str) -> set[str]:
 
 
 def summarize_table_schema(
-    table_name: str, sample_queries: set[str], schema_dir: Path, output_dir: Path, prompt_path: Path
+    table_name: str,
+    sample_queries: set[str],
+    schema_dir: Path,
+    prompt_path: Path,
 ) -> str:
     table_prompt = load_prompt(prompt_path)
     schema_path = schema_dir / f"{table_name}.json"
@@ -75,17 +80,10 @@ def summarize_table_schema(
         )
         logger.debug(f"Formatted table schema prompt for {table_name}: {formatted_prompt}")
 
-        response = openai.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": formatted_prompt}],
-        )
+        response_text = ModelGateway().generate_response(formatted_prompt)
 
-        summary = response.choices[0].message.content
-        if not summary:
-            raise Exception("Failed to generate query summary")
+        summary = response_text.replace("\\n", "\n")
 
-        formatted_summary = summary.replace("\\n", "\n")
-        save_summary(output_dir / f"{table_name}.txt", formatted_summary)
         return summary
 
     except Exception as e:
@@ -93,9 +91,7 @@ def summarize_table_schema(
         raise
 
 
-def summarize_query(
-    query: str, file_name: str, related_tables: set[str], schema_dir: Path, output_dir: Path, prompt_path: Path
-) -> str:
+def summarize_query(query: str, related_tables: set[str], schema_dir: Path, prompt_path: Path) -> str:
     query_prompt = load_prompt(prompt_path)
     table_schemas = "\n".join([json.dumps(load_table_schema(table, schema_dir), indent=2) for table in related_tables])
 
@@ -105,17 +101,10 @@ def summarize_query(
     )
     logger.debug(f"Formatted query prompt: {formatted_prompt}")
 
-    response = openai.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "user", "content": formatted_prompt}],
-    )
+    response_text = ModelGateway().generate_response(formatted_prompt)
 
-    summary = response.choices[0].message.content
-    if not summary:
-        raise Exception("Failed to generate query summary")
+    summary = response_text.replace("\\n", "\n")
 
-    formatted_summary = summary.replace("\\n", "\n")
-    save_summary(output_dir / f"{file_name}.txt", formatted_summary)
     return summary
 
 
@@ -125,9 +114,9 @@ def load_table_schema(table_name: str, schema_dir: Path) -> dict:
         return json.load(file)
 
 
-def save_summary(file_path: Path, summary: str) -> None:
+def _save_summary(file_path: Path, summary: str) -> None:
     with open(file_path, "w") as file:
-        json.dump({"summary": summary}, file, ensure_ascii=False, indent=2)
+        file.write(summary)
     logger.info(f"Saved summary to {file_path}")
 
 
@@ -143,14 +132,16 @@ def main(
     table_names = [f.stem for f in schema_dir.glob("*.json")]
     for table in table_names:
         sample_queries = find_related_queries(table, sample_queries_dir)
-        summarize_table_schema(table, sample_queries, schema_dir, output_schema_dir, schema_prompt_path)
+        table_summary = summarize_table_schema(table, sample_queries, schema_dir, schema_prompt_path)
+        _save_summary(output_schema_dir / f"{table}.txt", table_summary)
 
     query_files = sample_queries_dir.glob("*.sql")
     for query_file in query_files:
         with query_file.open() as f:
             query = f.read()
         related_tables = extract_related_tables(query)
-        summarize_query(query, query_file.stem, related_tables, schema_dir, output_queries_dir, query_prompt_path)
+        query_summary = summarize_query(query, related_tables, schema_dir, query_prompt_path)
+        _save_summary(output_queries_dir / f"{query_file.stem}.txt", query_summary)
 
 
 if __name__ == "__main__":
