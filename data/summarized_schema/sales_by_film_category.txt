@@ -1,3 +1,11 @@
-{
-  "summary": "The \"sales_by_film_category\" table contains data related to film categories and their corresponding total sales figures. \n\nColumns in the table include:\n- **category**: This column holds the names of different film categories.\n- **total_sales**: This column contains the total sales amounts associated with each film category.\n\nPotential use cases for this table include:\n- Analyzing which film categories generate the highest sales.\n- Comparing sales performance across different film categories.\n- Identifying trends in sales data over time for specific categories.\n- Assessing the impact of marketing strategies on sales within various film categories.\n- Informing inventory decisions based on sales performance by category."
-}
+The table "sales_by_film_category" contains data related to the sales of films, categorized by their respective film categories. It has two columns: "category," which is of type TEXT and indicates the genre or type of film, and "total_sales," which is of type DECIMAL and represents the total sales amount for each film category.
+
+Potential use cases for this table include:
+
+1. Analyzing sales distribution across different film categories to identify which categories are performing better.
+2. Comparing total sales figures between various categories to understand market trends.
+3. Tracking sales performance over time by aggregating data across time periods if combined with a temporal dataset.
+4. Assisting in inventory decisions by identifying popular categories that may require more targeted marketing or stocking.
+5. Supporting revenue forecasting based on historical sales data for each category.
+
+This table can help answer questions about sales performance, such as which film categories generate the most revenue and how sales are segmented across different types of films.

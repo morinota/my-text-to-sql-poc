@@ -1,3 +1,16 @@
-{
-  "summary": "The \"staff\" table contains data related to the employees of an organization. It includes the following columns:\n\n- **staff_id**: A unique identifier for each staff member (primary key).\n- **first_name**: The first name of the staff member.\n- **last_name**: The last name of the staff member.\n- **address_id**: A reference to the staff member's address (foreign key).\n- **picture**: A binary large object (BLOB) that may store a photo of the staff member.\n- **email**: The email address of the staff member.\n- **store_id**: A reference to the store that the staff member is associated with (foreign key).\n- **active**: A status indicator that shows whether the staff member is currently active.\n- **username**: The username for the staff member, used for system login.\n- **password**: Password information for the staff member's account.\n- **last_update**: A timestamp indicating the last time the record was updated.\n\nPotential use cases of the \"staff\" table include:\n\n- Identifying active staff members based on the \"active\" column.\n- Retrieving contact information of staff members, including their email addresses.\n- Linking staff with their corresponding stores using the \"store_id\" foreign key.\n- Analyzing staff distribution across different stores, potentially aiding in resource allocation.\n- Tracking changes and updates to staff records over time with the \"last_update\" column.\n- Managing user access and authentication through the \"username\" and \"password\" fields."
-}
+The "staff" table contains information about staff members in a business context. It includes the following types of data:
+
+- **Identification and Personal Information**: Each staff member is uniquely identified by a `staff_id`. Personal details include `first_name`, `last_name`, and `email`.
+- **Address**: The `address_id` column links to an address table, providing staff address details.
+- **Authentication Details**: The table contains `username`, `password`, and potentially a `picture` for user profiles.
+- **Store Association**: The `store_id` column connects staff members to specific stores.
+- **Activity Status**: The `active` column indicates whether a staff member is currently active, with a default value of 1 (active).
+- **Last Update Tracking**: The `last_update` timestamp records the last modification time for the staff member data.
+
+Potential use cases for the "staff" table include:
+
+- Analyzing staff demographics and their distribution across different stores.
+- Tracking the activity status of employees for operational purposes.
+- Managing authentication and user profile information for staff logins.
+- Evaluating staff updates over time through the `last_update` field.
+- Generating reports on staff members’ contact information for communication or organizational needs.

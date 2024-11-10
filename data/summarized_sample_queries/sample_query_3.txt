@@ -1,3 +1,60 @@
-{
-  "summary": "### SQL Query Documentation\n\n#### 1. Selected Columns and Their Description\n- `category_name`: This column represents the name of the film category. It is selected from the `category` table.\n- `avg_rental_days`: This column calculates the average number of rental days for films in each category. It is determined by taking the difference between the `return_date` and the `rental_date` from the `rental` table, and averaging these values for each category.\n\n#### 2. Input Tables of the Query and the Join Pattern\n- **Tables Used:**\n  - `rental`: Contains records of movies rented by customers, including rental and return dates.\n  - `inventory`: Links rentals to specific film inventory items.\n  - `film_category`: Associates films with their respective categories.\n  - `category`: Contains the film category information.\n\n- **Join Pattern:**\n  - `rental` is joined with `inventory` on `r.inventory_id = i.inventory_id` to link rentals to specific inventory items.\n  - `inventory` is then joined with `film_category` on `i.film_id = fc.film_id` to link inventory items to their corresponding films.\n  - Finally, `film_category` is joined with `category` on `fc.category_id = c.category_id` to retrieve the names of the categories for the films.\n\n#### 3. Query's Detailed Transformation Logic\nThe query performs the following steps:\n- It starts by selecting the relevant data from the `rental` table, specifically the rental and return dates.\n- It joins this data with the `inventory` table to associate each rental with the specific film in inventory.\n- It then links this data to the `film_category` table to determine the category of each film rented.\n- Finally, it joins with the `category` table to obtain the name of each category.\n- The average rental period is calculated by subtracting `rental_date` from `return_date` using the `julianday()` function, which convert dates to Julian day numbers, allowing for straightforward subtraction. The resultant average is grouped by `category_name`, giving a mean rental duration for each film category.\n\nThese transformations are essential to ensure that the query accurately calculates the average rental days segregated by film categories.\n\n#### 4. Type of Filters Performed by the Query\n- The query does not apply any direct filtering conditions (e.g., `WHERE` clauses), but the grouping inherently filters results to only provide one row per category with the average calculation.\n- This grouping is crucial as it enables the aggregation of rental data per category, allowing analysis at a higher level rather than individual rentals, which is not desired in this context.\n\n#### 5. Purposes and Motives of the Query\nThe primary purpose of this query is to analyze rental behavior by category, specifically to calculate the average rental duration for films within each category. Understanding average rental times can help identify trends in customer preferences and behaviors, allowing business stakeholders to make more informed decisions regarding inventory management, marketing strategies, and customer service improvements.\n\n- **Business Purpose**: \n  - To help management assess which film categories are more popular based on rental duration, guiding them on which genres might need more stock or promotional efforts.\n  - To prepare reports that may be of interest to stakeholders, including movie distributors and marketing teams, providing insight into consumer behavior.\n\n- **Functional Purpose**:\n  - To directly inform the operational processes at rental outlets, optimizing inventory cycles to ensure availability of popular films.\n  - To enhance decision-making around future film acquisitions based on their average rental performance.\n\n#### 6. Possible Business and Functional Purposes of the Query\n- **Revenue Optimization**: By understanding which categories have higher average rental days, businesses can optimize their purchasing strategies and stock levels, maximizing rental income.\n- **Marketing Focus**: The findings can inform targeted marketing campaigns, enhancing promotional efforts for high-demand categories.\n- **Customer Experience**: By recognizing popular categories, businesses can tailor their customer engagement strategies, potentially leading to enhanced customer satisfaction through curated recommendations and displays.\n- **Inventory Management**: Insights gained from this query can assist in refining inventory management practices, reducing costs associated with overstocking less popular categories and understocking more lucrative ones.\n\nIn summary, this query serves as a critical tool for insights regarding rental patterns, assisting in decision-making that can lead to improved business performance and customer satisfaction."
-}
+### SQL Query Documentation
+
+#### Selected Columns and Their Description
+
+1. **category_name**: 
+   - Description: This column represents the name of each category of films. It is obtained from the `category` table.
+   - SQL Expression: `c.name AS category_name`
+
+2. **avg_rental_days**: 
+   - Description: This column calculates the average number of days that films in each category are rented out. It is computed by taking the difference between `return_date` and `rental_date`, converting the result to Julian days, and then averaging those differences for each category.
+   - SQL Expression: `AVG(julianday(r.return_date) - julianday(r.rental_date)) AS avg_rental_days`
+
+#### Input Tables of the Query and Join Pattern
+
+1. **Tables Involved**:
+   - **rental (r)**: Stores information about rentals, including rental dates and return dates.
+   - **inventory (i)**: Contains records of available film inventory.
+   - **film_category (fc)**: Maps films to their respective categories.
+   - **category (c)**: Contains the details of film categories.
+
+2. **Join Pattern**:
+   - The query uses INNER JOINs to combine the `rental`, `inventory`, `film_category`, and `category` tables based on the following relationships:
+     - `rental` is joined with `inventory` on `inventory_id` (`r.inventory_id = i.inventory_id`).
+     - `inventory` is joined with `film_category` on `film_id` (`i.film_id = fc.film_id`).
+     - `film_category` is joined with `category` on `category_id` (`fc.category_id = c.category_id`).
+
+#### Query's Detailed Transformation Logic
+
+The query starts by gathering rental information from the `rental` table and joins it with the `inventory` table to determine which film was rented. It then joins the `film_category` table to find the category associated with those films and finally joins with the `category` table to retrieve the category name.
+
+The key transformation involves calculating the average rental duration for each film category. The difference between the `return_date` and `rental_date` is calculated in days for each rental, and then the result is aggregated (averaged) across all rentals for each category. This transformation is necessary to provide insights into how long films are typically rented for, which can inform inventory management, marketing strategies, and customer preferences.
+
+#### Type of Filters Performed by the Query
+
+The query does not explicitly perform any filtering conditions (such as a WHERE clause). However, the natural joins inherently filter out any records that do not have corresponding entries in the joined tables. This implicit filtering ensures that only relevant rentals that are tied to existing inventory items and their respective categories are included in the calculation of average rental days.
+
+#### Detailed Purposes and Motives of the Query
+
+The primary purpose of this query is to analyze rental patterns across different film categories. By understanding the average rental duration for each category, stakeholders can gain valuable insights into customer behaviors and preferences. Such insights may be utilized for strategic decision-making in areas such as:
+
+- Inventory management: Identifying popular categories that require higher stock levels based on average rental durations.
+- Marketing: Tailoring promotional strategies around categories with longer rentals to maximize customer engagement.
+- Customer service: Enhancing customer experience based on understanding the tendencies of various film categories.
+
+#### Possible Business and Functional Purposes of the Query
+
+1. **Business Insights**: 
+   - This query can help rental businesses evaluate which film categories are more popular and which ones might require more promotional efforts. 
+
+2. **Inventory Optimization**: 
+   - By identifying categories with the highest average rental periods, businesses can adjust their inventory to ensure that popular films are readily available and consider investing in similar genres.
+
+3. **Customer Engagement**: 
+   - Understanding rental trends can assist in effectively targeting customers with recommendations or discounts based on their rental history, thereby enhancing customer loyalty.
+
+4. **Performance Monitoring**: 
+   - The average rental days can serve as a key performance indicator (KPI) for assessing the performance of different film categories over time.
+
+5. **Strategic Decision Making**: 
+   - The results of this query can be integral for planning future acquisitions or releases, as businesses will have data-driven insights into what types of films resonate with customers.

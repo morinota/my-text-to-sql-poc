@@ -1,3 +1,12 @@
-{
-  "summary": "The \"category\" table contains data related to film categories. It has three columns:\n\n1. **category_id**: An integer that serves as the primary key for the table, uniquely identifying each category.\n2. **name**: A non-nullable string (VARCHAR) representing the name of the category, limited to 25 characters.\n3. **last_update**: A non-nullable timestamp that indicates the last time the category information was updated.\n\nThis table can be used to analyze various aspects of film categories. Potential use cases include:\n\n- Identifying the different categories of films available.\n- Tracking changes to category information over time using the last_update field.\n- Joining with other tables, such as those containing rental or inventory data, to aggregate information related to films within each category. \n\nQuestions that could be answered using this table include:\n\n- What categories of films exist in the database?\n- When was the last update made to each category?\n- How are films distributed across different categories in terms of rental frequencies or average rental durations when combined with rental data."
-}
+The "category" table contains information about different movie categories. It includes the following columns:
+
+- **category_id**: This is an integer that serves as the primary key for the table, uniquely identifying each category.
+- **name**: This is a string (VARCHAR) that represents the name of the category and cannot be null.
+- **last_update**: This is a timestamp that indicates the last time the category information was updated and cannot be null.
+
+Potential use cases of the "category" table include:
+
+- Identifying and listing all movie categories available in a database.
+- Tracking changes to category names and update timestamps for auditing purposes.
+- Assisting in the categorization and retrieval of films based on their respective categories, which can further support queries related to rentals, sales, or popularity of each category.
+- Enabling further analysis on metrics such as the number of films per category or trend analysis over time based on the last update timestamp.

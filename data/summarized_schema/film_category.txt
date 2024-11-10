@@ -1,3 +1,14 @@
-{
-  "summary": "The `film_category` table contains information that links films to their respective categories. It has the following columns:\n\n- `film_id`: This is an integer that serves as a primary key and also acts as a foreign key referencing the `film` table.\n- `category_id`: This is also an integer that serves as a primary key and acts as a foreign key referencing the `category` table.\n- `last_update`: This is a timestamp indicating the last time the record was updated, and it is not nullable.\n\nThis table allows for the analysis of films based on their categories, enabling potential queries such as:\n\n- Determining the number of films available in each category.\n- Analyzing the relationship between film categories and rental patterns.\n- Grouping films based on categories for reporting or visualization.\n- Identifying trends in category popularity over time, based on last update timestamps.\n\nOverall, the `film_category` table serves as a crucial link between films and their categories, facilitating various types of analyses related to inventory and rentals categorized by film type."
-}
+The `film_category` table contains information about the relationship between films and their corresponding categories. It has three columns: 
+
+- `film_id`: An integer that uniquely identifies a film and serves as a foreign key referencing the `film` table.
+- `category_id`: An integer that uniquely identifies a category and serves as a foreign key referencing the `category` table.
+- `last_update`: A timestamp indicating the last time the record was updated, and it cannot be null.
+
+This table enables analysis of how films are categorized within the database. Potential use cases include:
+
+- Identifying which films belong to specific categories.
+- Analyzing the distribution of films across different categories.
+- Investigating the relationship between categories and other attributes, such as rental activity or inventory details.
+- Supporting queries to summarize category-specific characteristics, such as rental trends or average rental durations. 
+
+Overall, the `film_category` table can facilitate various analyses relating to the classification and management of films in a rental or sales environment.

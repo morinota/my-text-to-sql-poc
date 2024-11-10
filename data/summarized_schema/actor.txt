@@ -1,3 +1,15 @@
-{
-  "summary": "The \"actor\" table contains data related to actors in a film database. It comprises four columns:\n\n1. **actor_id**: A unique identifier for each actor (INTEGER, primary key).\n2. **first_name**: The first name of the actor (VARCHAR, not nullable).\n3. **last_name**: The last name of the actor (VARCHAR, not nullable).\n4. **last_update**: A timestamp indicating the last time the actor's data was updated (TIMESTAMP, not nullable).\n\nThis table can be utilized to answer various questions, such as identifying actors by their names, tracking how many films each actor has appeared in, and determining the most recently updated information on actors. Potential analyses might include creating lists of actors, grouping actors based on their film appearances, or examining changes in actor data over time."
-}
+The "actor" table contains information about individual actors, with the following columns: 
+
+- **actor_id**: An integer that serves as the primary key to uniquely identify each actor.
+- **first_name**: A string of up to 45 characters representing the actor's first name.
+- **last_name**: A string of up to 45 characters representing the actor's last name.
+- **last_update**: A timestamp indicating the last time the record for the actor was updated.
+
+This table can be utilized in various ways, including:
+
+- Identifying actors based on their unique identifier and names.
+- Tracking the most recent updates to actor information.
+- Analyzing the relationships between actors and the films they have participated in, possibly by joining with other tables such as "film_actor" to count the number of films associated with each actor.
+- Generating lists of films associated with specific actors by linking actor data to film data.
+
+Overall, the table serves as a key component for managing and querying information related to actors within a film database.

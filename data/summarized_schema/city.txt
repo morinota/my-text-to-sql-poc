@@ -1,3 +1,14 @@
-{
-  "summary": "The \"city\" table contains information related to cities, structured with four columns. \n\n- **city_id**: A unique identifier for each city, which serves as the primary key.\n- **city**: The name of the city.\n- **country_id**: A reference to the country associated with the city, functioning as a foreign key linked to a country table.\n- **last_update**: A timestamp indicating the last time the record was updated.\n\nThis table can be utilized to perform various analyses related to geographic data, such as identifying the cities within a specific country, tracking changes in city data over time through the last update timestamp, and aggregating data for reporting or data visualization. Potential questions that can be answered with this table include: \n\n- What cities exist within a particular country? \n- When was the last update made to the information about a city? \n- How many cities are there in total? \n\nAdditionally, it can assist in joining with other tables, such as those containing country data, to provide more extensive insights on city demographics or geographical analysis."
-}
+The "city" table contains data related to cities, with the following columns: 
+
+- **city_id**: a unique identifier for each city (INTEGER, primary key).
+- **city**: the name of the city (VARCHAR(50), not nullable).
+- **country_id**: a reference to the country the city belongs to (INTEGER, foreign key, not nullable).
+- **last_update**: a timestamp indicating the last time the record was updated (TIMESTAMP, not nullable).
+
+This table can be used to answer various questions and perform analyses, such as:
+
+- Identifying which cities belong to a specific country using the `country_id`.
+- Tracking updates to city records over time with the `last_update` field.
+- Analyzing the distribution of cities within different countries.
+- Joining this table with other tables (e.g., country table) to obtain more detailed geographic insights.
+- Generating reports on the number of cities in a given country or the most recently updated cities in the dataset.

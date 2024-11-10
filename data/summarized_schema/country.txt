@@ -1,3 +1,14 @@
-{
-  "summary": "The \"country\" table contains data related to countries. It has three columns: \"country_id,\" which is an integer and serves as the primary key; \"country,\" which is a non-nullable string with a maximum length of 50 characters representing the name of the country; and \"last_update,\" which is a timestamp indicating the last time the record was updated.\n\nPotential use cases for this table include:\n\n- Identifying unique countries and their corresponding IDs for various applications.\n- Analyzing changes or updates to country data over time based on the \"last_update\" column.\n- Associating countries with other data entities in a database (e.g., regions, populations, and demographics) using the \"country_id.\"\n- Generating reports that list all countries or specific countries based on certain criteria.\n- Supporting queries that derive insights related to geographical data, such as grouping countries by specific characteristics or statuses."
-}
+The "country" table contains information related to countries. It includes the following columns:
+
+- **country_id**: An integer that serves as the primary key for identifying each country uniquely.
+- **country**: A string that holds the name of the country, which is a non-nullable field.
+- **last_update**: A timestamp indicating when the record was last updated.
+
+Possible use cases for this table include:
+
+- Identifying countries through their unique identifiers.
+- Performing queries to retrieve names of countries for reporting or analysis.
+- Tracking changes to country records over time with the last_update timestamp.
+- Analyzing data related to country-specific metrics alongside other data tables that may reference countries using the country_id. 
+
+This table could answer questions such as "What are the names of all countries in the database?" or "When was the information about a specific country last updated?"

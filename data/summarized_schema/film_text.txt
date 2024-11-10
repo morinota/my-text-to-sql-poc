@@ -1,3 +1,7 @@
-{
-  "summary": "The table \"film_text\" contains data related to films, specifically focusing on the film's identification, title, and description. It includes the following columns:\n\n- **film_id**: An integer that serves as the primary key for uniquely identifying each film.\n- **title**: A variable character string that holds the name of the film, which is a required field.\n- **description**: A text field that provides detailed information about the film, which can include plot summaries, themes, and other relevant details.\n\nPotential use cases for the \"film_text\" table include:\n\n- Analyzing trends in film titles and descriptions to understand genre popularity or thematic elements within a specific time frame.\n- Generating reports or summaries of films based on their descriptions, which can support various applications in film recommendation systems.\n- Conducting searches or filtering films based on keywords found in the title or description, facilitating user queries in a film database.\n- Connecting this information with other datasets, such as ratings or box office performance, to perform a comprehensive analysis of films and their success factors."
-}
+The "film_text" table contains information related to films, specifically their IDs, titles, and descriptions. The columns include:
+
+- **film_id** (INTEGER): This is the primary key that uniquely identifies each film in the table.
+- **title** (VARCHAR(255)): This column holds the names of the films and cannot be null.
+- **description** (TEXT): This column contains detailed descriptions of the films, providing context or background information about each film.
+
+Potential use cases for this table include answering questions about specific films based on their titles or descriptions, conducting analysis on film content, generating lists of films based on keywords in their descriptions, and examining trends in film titles or themes. It can also be useful for creating film databases, supporting search functionalities, and providing information for film-related applications or websites.

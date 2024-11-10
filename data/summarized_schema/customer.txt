@@ -1,3 +1,19 @@
-{
-  "summary": "The \"customer\" table contains data related to customers, including their identifiers and contact details. The relevant columns in the table are as follows:\n\n- **customer_id**: A unique identifier for each customer.\n- **store_id**: The identifier for the store associated with the customer, which is a foreign key referencing the store table.\n- **first_name**: The first name of the customer.\n- **last_name**: The last name of the customer.\n- **email**: The customer's email address.\n- **address_id**: A foreign key reference to the address table, indicating the customer's address.\n- **active**: Indicates whether the customer is active, with a default value of 'Y'.\n- **create_date**: The timestamp indicating when the customer record was created.\n- **last_update**: The timestamp showing the last update made to the customer record.\n\nThis table can be used for various analyses related to customer engagement and demographics. Potential use cases include:\n\n- Identifying active versus inactive customers.\n- Aggregating customer data for reporting on sales performance by customer.\n- Analyzing customer demographics based on name and email data.\n- Linking customer data with store transactions to assess customer purchasing behavior.\n- Tracking customer record changes over time by analyzing create_date and last_update fields."
-}
+The "customer" table contains data related to customers associated with a store. The columns include:
+
+- **customer_id**: A unique identifier for each customer (primary key).
+- **store_id**: Identifier for the store to which the customer belongs (foreign key).
+- **first_name**: The first name of the customer.
+- **last_name**: The last name of the customer.
+- **email**: The email address of the customer.
+- **address_id**: Identifier for the address of the customer (foreign key).
+- **active**: Status indicating if the customer is active.
+- **create_date**: The date the customer record was created.
+- **last_update**: The date the customer record was last updated.
+
+This table can be used to analyze customer demographics, track customer engagement, and assess store performance. Potential use cases include:
+
+1. Identifying active and inactive customers for marketing strategies.
+2. Analyzing customer information by store to evaluate store performance.
+3. Examining customer creation trends over time to inform recruitment of customer-facing staff.
+4. Tracking changes in customer data over time for reporting and auditing purposes.
+5. Aggregating customer data for loyalty program analysis or customer retention efforts.

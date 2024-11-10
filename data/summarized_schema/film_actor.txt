@@ -1,3 +1,14 @@
-{
-  "summary": "The `film_actor` table contains data that associates actors with the films in which they have performed. It has three columns: `actor_id`, which serves as a primary key and references the `actor` table; `film_id`, which also acts as a primary key and references the `film` table; and `last_update`, which records the timestamp of the last update made to the entry.\n\nThis table can be used to address various queries related to the relationship between actors and films. Such use cases include:\n\n- Identifying all films associated with specific actors, allowing for the retrieval of an actor's filmography.\n- Counting the number of films each actor has appeared in, enabling insights into their frequency of participation in film projects.\n- Analyzing trends over time, such as the impact of specific actors on film production or box office performance.\n  \nOverall, the `film_actor` table serves as a link between actors and their respective films, facilitating various forms of analysis related to the film industry."
-}
+The "film_actor" table contains data that associates actors with the films they have appeared in. It includes three columns:
+
+- **actor_id**: An integer value that serves as a primary key and references the unique identifier of actors from the "actor" table.
+- **film_id**: An integer value that serves as a primary key and references the unique identifier of films from the "film" table.
+- **last_update**: A timestamp that indicates the last time a record in this table was updated, and it cannot be null.
+
+This table can be used for various analytical purposes, such as:
+
+1. Determining the number of films each actor has appeared in.
+2. Listing the films associated with a specific actor.
+3. Analyzing actor participation in films over time by utilizing the last_update timestamp.
+4. Identifying co-actors by analyzing films shared between different actors.
+
+Overall, the "film_actor" table provides a relational mapping between actors and films, facilitating queries related to actor-film relationships.

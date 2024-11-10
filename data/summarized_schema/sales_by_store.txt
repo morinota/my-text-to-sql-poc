@@ -1,3 +1,14 @@
-{
-  "summary": "The table \"sales_by_store\" contains data about sales performance across different store locations. It includes the following columns:\n\n- **store_id**: A unique identifier for each store, represented as an INTEGER.\n- **store**: The name of the store, represented as TEXT.\n- **manager**: The name of the store manager, represented as TEXT.\n- **total_sales**: The total sales amount for each store, represented as a DECIMAL.\n\nPotential use cases of the table include:\n\n- Analyzing sales performance by store to identify which locations generate the most revenue.\n- Comparing total sales across different stores to assess relative performance.\n- Evaluating the effectiveness of store managers by correlating total sales with individual manager performance.\n- Conducting trend analysis on sales over time, if combined with time series data.\n- Supporting strategic decision-making related to store management, such as resource allocation and marketing efforts, based on sales data."
-}
+The "sales_by_store" table contains information related to sales performance across different stores. It has the following columns: 
+
+- **store_id**: A unique identifier for each store.
+- **store**: The name of the store.
+- **manager**: The name of the store's manager.
+- **total_sales**: The total sales amount for each store represented as a decimal value.
+
+This table can be used to analyze sales data at the store level. Potential use cases include:
+
+- Determining which stores have the highest or lowest total sales.
+- Comparing sales performance between different stores.
+- Evaluating the impact of store management on sales figures by analyzing total sales per manager.
+- Identifying trends in sales over time if combined with date-related data.
+- Assisting in inventory management and stock allocation based on sales performance at specific stores.

@@ -1,3 +1,11 @@
-{
-  "summary": "The \"language\" table contains data related to various languages. The table includes three columns: \n\n1. **language_id**: An integer that serves as the primary key for the table, uniquely identifying each language record.\n2. **name**: A character field limited to 20 characters that stores the name of the language. This column is not nullable, meaning every entry must contain a name.\n3. **last_update**: A timestamp that indicates when the entry for the language was last updated. This column is also not nullable.\n\nThe table can be utilized to answer questions related to the identification and management of languages. Possible use cases include:\n\n- Determining the number of languages recorded in the system.\n- Tracking changes to language data via the last updated timestamp.\n- Establishing relationships between languages if linked with other tables.\n- Conducting analysis on language usage trends or updates over time. \n\nOverall, this table serves as a structured repository for managing language data, facilitating various analytical and operational tasks."
-}
+The "language" table contains three columns: "language_id," "name," and "last_update." 
+
+- The "language_id" column is an integer that serves as the primary key for identifying each language record uniquely. 
+- The "name" column is a character string with a fixed length of 20 characters that represents the name of the language and cannot be null.
+- The "last_update" column is a timestamp that indicates when the record was last updated and is also required.
+
+Potential use cases for the "language" table include:
+- Identifying and retrieving the names of different languages stored in the database.
+- Tracking the last update time for each language, which can be useful for data maintenance and auditing.
+- Analyzing the frequency or pattern of updates to the language records over time.
+- Joining this table with other tables to associate languages with related entities, such as translations or language usage statistics.
