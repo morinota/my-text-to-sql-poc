@@ -80,4 +80,14 @@ def test_summarize_app_e2e(mocker: MockerFixture):
         )
 
         # Assert
-        assert result.exit_code == 0
+        assert result.exit_code == 0, "CLIアプリケーションが正常終了すること"
+
+        ## 出力ファイルの内容を確認
+        with open(summarized_schema_dir / "hoge_table.txt", "r") as f:
+            assert (
+                f.read() == test_double_response
+            ), "テーブルスキーマのサマリがmodel gatewayのレスポンスに基づいて正しく出力されていること"
+        with open(summarized_sample_queries_dir / "sample_query.txt", "r") as f:
+            assert (
+                f.read() == test_double_response
+            ), "サンプルクエリのサマリがmodel gatewayのレスポンスに基づいて正しく出力されていること"
