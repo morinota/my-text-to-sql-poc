@@ -15,6 +15,10 @@ loguru = "^0.7.2"
 sqlfluff = "^3.2.5"
 faiss-cpu = "^1.9.0"
 sentence-transformers = "^3.2.1"
+langchain-openai = "^0.2.6"
+langchain-community = "^0.3.5"
+tavily-python = "^0.5.0"
+omegaconf = "^2.3.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -24,6 +28,7 @@ pytest-mock = "^3.14.0"
 
 [tool.ruff.lint]
 extend-select = ["I"]
+ignore = ["F401"]
 
 
 [tool.ruff.lint.pycodestyle]
