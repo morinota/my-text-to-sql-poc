@@ -46,6 +46,9 @@ def get_search_results(inputs: dict[str, Any]) -> Any:
     return search.run(inputs["input"])
 
 
+## このパイプでつなげた記法は、LCEL(LangChain Expression Language)と呼ばれる記法。
+## パイプの前から後に入出力が渡される。
+## この一連の動作フローをchainと呼ぶ。
 writer_chain = (
     {
         "input": lambda x: x["input"],
@@ -61,6 +64,10 @@ reviewer_chain = reviewer_prompt | llm | StrOutputParser()
 
 
 def run_blog_creation_process(topic: str) -> tuple[str, str]:
+    """実行ワークフローを定義
+    - 上記chainを使って、while文で定量評価が8点以上になるまで、
+    - ブログ内容とレビュー内容と二つのエージェントに受け渡してブラッシュアップと執筆を繰り返させる
+    """
     search_results = search.run(topic)
     blog_content = writer_chain.invoke({"input": topic, "search_results": search_results})
     logger.debug(f"blog_content: {blog_content}")
