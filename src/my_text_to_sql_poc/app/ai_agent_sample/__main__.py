@@ -59,7 +59,6 @@ writer_chain = (
     | llm
     | StrOutputParser()
 )
-
 reviewer_chain = reviewer_prompt | llm | StrOutputParser()
 
 
@@ -69,6 +68,7 @@ def run_blog_creation_process(topic: str) -> tuple[str, str]:
     - ブログ内容とレビュー内容と二つのエージェントに受け渡してブラッシュアップと執筆を繰り返させる
     """
     search_results = search.run(topic)
+    print(search_results)
     blog_content = writer_chain.invoke({"input": topic, "search_results": search_results})
     logger.debug(f"blog_content: {blog_content}")
 
