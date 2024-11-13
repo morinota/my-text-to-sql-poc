@@ -12,7 +12,5 @@ data/sqlite-sakila-delete-data.sql
 # データベースファイル
 data/sample.db
 
-# Ignore FAISS index files
-*.faiss
-# Ignore FAISS ID list files
-vector_ids.txt
+# ignore duckdbファイル
+*.duckdb
