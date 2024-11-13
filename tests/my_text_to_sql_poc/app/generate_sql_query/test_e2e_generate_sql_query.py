@@ -1,7 +1,7 @@
 from pytest_mock import MockerFixture
 from typer.testing import CliRunner
 
-from my_text_to_sql_poc.__main__ import app
+from my_text_to_sql_poc.app.generate_sql_query.__main__ import app
 
 runner = CliRunner()
 
