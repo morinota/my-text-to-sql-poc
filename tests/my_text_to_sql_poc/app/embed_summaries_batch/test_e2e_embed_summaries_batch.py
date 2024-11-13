@@ -11,9 +11,9 @@ runner = CliRunner()
 def test_e2e_embed_summaries_batch() -> None:
     with runner.isolated_filesystem():
         # Arrange
-        ## テスト用ディレクトリとサンプル要約ファイルを作成
-        table_summary_dir = Path("table_summaries")
-        query_summary_dir = Path("query_summaries")
+        ## テスト用のdocumentsディレクトリとサンプル要約ファイルを用意する
+        table_summary_dir = Path("documents/table_summaries")
+        query_summary_dir = Path("documents/query_summaries")
         table_summary_dir.mkdir(parents=True, exist_ok=True)
         query_summary_dir.mkdir(parents=True, exist_ok=True)
 
@@ -31,13 +31,11 @@ def test_e2e_embed_summaries_batch() -> None:
             app,
             [
                 "--table-summary-dir",
-                str(table_summary_dir),
+                "documents/table_summaries",
                 "--query-summary-dir",
-                str(query_summary_dir),
-                "--index-file",
-                "vector_index.faiss",
-                "--id-file",
-                "vector_id_map.txt",
+                "documents/query_summaries",
+                "--vectorstore-file",
+                "vectorstore.duckdb",
             ],
         )
 
