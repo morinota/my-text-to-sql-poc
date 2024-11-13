@@ -1,70 +1,75 @@
 from pathlib import Path
 
-import faiss
-import numpy as np
+import duckdb
 import typer
+from langchain_community.docstore.document import Document
+from langchain_community.document_loaders import TextLoader
+from langchain_community.vectorstores import DuckDB
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
 from loguru import logger
-from sentence_transformers import SentenceTransformer
+from tiktoken import encoding_for_model
 
 app = typer.Typer()
 
-# モデルのロード
-MODEL_NAME = "intfloat/multilingual-e5-small"
-model = SentenceTransformer(MODEL_NAME)
+# 定数設定
+EMBEDDING_MODEL_NAME = "text-embedding-3-small"
+PRICE_DOLLAR_PER_1K_TOKENS = 0.00002
+
+# OpenAIの埋め込みモデルを設定
+embeddings_model = OpenAIEmbeddings(model=EMBEDDING_MODEL_NAME)
 
 
-def _encode_texts(texts: list[str]) -> list[list[float]]:
-    """複数のテキストを埋め込みベクトルにエンコード"""
-    return model.encode(texts).tolist()
+def _calculate_cost(documents: list[Document]) -> float:
+    """トークン数と予想料金を計算"""
+    encoding = encoding_for_model(EMBEDDING_MODEL_NAME)
+    total_tokens = sum(len(encoding.encode(doc.page_content)) for doc in documents)
+    cost_dollar = (total_tokens / 1000) * PRICE_DOLLAR_PER_1K_TOKENS
+    logger.info(f"Total tokens: {total_tokens}")
+    logger.info(f"Estimated cost: ${cost_dollar:.4f}")
+    return cost_dollar
 
 
-def _process_and_store_embeddings(summary_dir: Path, index: faiss.IndexFlatL2, id_file: Path):
-    """要約ファイルを読み込み、埋め込みを生成し、FAISSインデックスに保存"""
-    summary_files = list(summary_dir.glob("*.txt"))
-    texts = []
-    file_names = []
+def _load_and_split_documents(directory_path: Path) -> list[Document]:
+    documents = []
+    for file_path in directory_path.glob("*.txt"):
+        documents.extend(TextLoader(file_path).load())
 
-    # バッチ対象のテキストを収集
-    for summary_file in summary_files:
-        with summary_file.open("r") as f:
-            texts.append(f.read())
-            file_names.append(summary_file.name)
+    return CharacterTextSplitter().split_documents(documents)
 
-    # バッチエンコード
-    embeddings = _encode_texts(texts)
-    embeddings_array = np.array(embeddings).astype("float32")
 
-    # ベクトルストアに追加
-    index.add(embeddings_array)
-
-    # ファイル名とfaiss indexのIDのmappingを保存しておく(行番号がfaissのIDになる)
-    # (faissは基本的にkey-valueストアではなく、単にベクトルの集合体として機能するので)
-    with id_file.open("a") as f:
-        for file_name in file_names:
-            f.write(f"{file_name}\n")
+def _process_and_store_embeddings(
+    documents: list[Document],
+    connection: duckdb.DuckDBPyConnection,
+) -> DuckDB:
+    """テキストを読み込み、埋め込みを生成し、DuckDBに保存"""
+    docsearch = DuckDB.from_documents(documents, embeddings_model, connection=connection)
+    return docsearch
 
 
 @app.command()
 def main(
-    table_summary_dir: Path = typer.Option(..., help="テーブル要約ディレクトリ"),
-    query_summary_dir: Path = typer.Option(..., help="クエリ要約ディレクトリ"),
-    index_file: Path = typer.Option("vector_index.faiss", help="FAISSベクトルインデックスの保存先"),
-    id_file: Path = typer.Option("vector_ids.txt", help="各埋め込みのIDリスト"),
+    table_summary_dir: Path = typer.Option("data/summarized_schema/", help="テーブル要約ディレクトリ"),
+    query_summary_dir: Path = typer.Option("data/summarized_queries/", help="クエリ要約ディレクトリ"),
+    vectorstore_file: Path = typer.Option("sample_vectorstore.duckdb", help="ベクトルストアファイル"),
 ):
-    # FAISSのインデックス作成 (ベクトルの次元数はモデル出力に合わせる)
-    embedding_dim = model.get_sentence_embedding_dimension()
-    index = faiss.IndexFlatL2(embedding_dim)
-    logger.debug(f"Created FAISS index with dimension: {embedding_dim}")
+    if vectorstore_file.exists():
+        vectorstore_file.unlink()  # すでに存在していたら一旦削除
+
+    # データベース接続の設定
+    conn = duckdb.connect(database=str(vectorstore_file))
+
+    # documentsをロード
+    documents = _load_and_split_documents(table_summary_dir)
+    # コスト計算
+    _calculate_cost(documents)
 
     # テーブルとクエリの埋め込み生成と保存
-    _process_and_store_embeddings(table_summary_dir, index, id_file)
-    logger.debug("Processed and stored table embeddings to faiss index")
-    _process_and_store_embeddings(query_summary_dir, index, id_file)
-    logger.debug("Processed and stored query embeddings to faiss index")
+    _process_and_store_embeddings(documents, conn)
 
-    # ベクトルストアを保存
-    faiss.write_index(index, str(index_file))
-    logger.debug(f"persisted faiss index to {index_file}")
+    # ベクトルデータベースの中身を確認
+    logger.debug(conn.execute("SELECT count(*) FROM embeddings").df())
+    logger.debug(conn.execute("SELECT * FROM embeddings LIMIT 5").df())
 
 
 if __name__ == "__main__":

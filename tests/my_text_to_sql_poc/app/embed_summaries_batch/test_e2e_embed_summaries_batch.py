@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pytest_mock import MockerFixture
+import duckdb
 from typer.testing import CliRunner
 
 from my_text_to_sql_poc.app.embed_summaries_batch.__main__ import app
@@ -8,7 +8,7 @@ from my_text_to_sql_poc.app.embed_summaries_batch.__main__ import app
 runner = CliRunner()
 
 
-def test_e2e_embed_summaries_batch(mocker: MockerFixture):
+def test_e2e_embed_summaries_batch() -> None:
     with runner.isolated_filesystem():
         # Arrange
         ## テスト用ディレクトリとサンプル要約ファイルを作成
@@ -44,11 +44,9 @@ def test_e2e_embed_summaries_batch(mocker: MockerFixture):
         # Assert
         assert result.exit_code == 0, "CLIアプリケーションが正常終了すること"
 
-        assert Path("vector_index.faiss").exists(), "FAISSインデックスファイルが生成されていること"
+        assert Path("vectorstore.duckdb").exists(), "DuckDBファイルが生成されていること"
 
-        # IDリストファイルの中身を確認
-        assert Path("vector_id_map.txt").exists(), "IDリストファイルが生成されていること"
-        with open("vector_id_map.txt", "r") as f:
-            ids = f.readlines()
-            print(ids)
-            assert len(ids) == 4, "IDリストファイルに4つの要約ファイルの名前が記載されていること"
+        # DuckDBに想定通りに埋め込みが永続化されていることを確認
+        conn = duckdb.connect("vectorstore.duckdb")
+        result = conn.execute("SELECT * from embeddings").fetchall()
+        assert len(result) == 4, "埋め込みが4つ永続化されていること"
