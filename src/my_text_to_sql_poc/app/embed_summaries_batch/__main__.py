@@ -50,7 +50,7 @@ def _process_and_store_embeddings(
 @app.command()
 def main(
     table_summary_dir: Path = typer.Option("data/summarized_schema/", help="テーブル要約ディレクトリ"),
-    query_summary_dir: Path = typer.Option("data/summarized_queries/", help="クエリ要約ディレクトリ"),
+    query_summary_dir: Path = typer.Option("data/summarized_sample_queries/", help="クエリ要約ディレクトリ"),
     vectorstore_file: Path = typer.Option("sample_vectorstore.duckdb", help="ベクトルストアファイル"),
 ):
     if vectorstore_file.exists():
@@ -60,7 +60,8 @@ def main(
     conn = duckdb.connect(database=str(vectorstore_file))
 
     # documentsをロード
-    documents = _load_and_split_documents(table_summary_dir)
+    documents = _load_and_split_documents(table_summary_dir) + _load_and_split_documents(query_summary_dir)
+    logger.info(f"Loaded {len(documents)} documents")
     # コスト計算
     _calculate_cost(documents)
 
