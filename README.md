@@ -74,22 +74,8 @@ poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？
 
 ### 1.6.1. 実行例
 
-#### 1.6.1.1. デバッグ情報なしで実行
+#### 1.6.1.1. text to sqlアプリver1の実行
 
 ```bash
-poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？" --dialect "SQLite" --log-level "INFO"
-```
-
-#### 1.6.1.2. デバッグ情報ありで実行
-
-```bash
-poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？" --dialect "SQLite" --log-level "DEBUG"
-```
-
----
-
-これで、アプリケーションの動作確認やログレベル設定についての手順が確認できます。必要に応じて、--helpオプションでコマンドのオプション一覧を確認することもできます。
-
-```bash
-poetry run python -m my_text_to_sql_poc --help
+poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver1 --question "各年の売り上げの推移を知りたい" --dialect "DuckDB" --log-level "DEBUG"
 ```

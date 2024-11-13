@@ -1,7 +1,6 @@
-from pytest_mock import MockerFixture
 from typer.testing import CliRunner
 
-from my_text_to_sql_poc.app.generate_sql_query.__main__ import app
+from my_text_to_sql_poc.app.generate_sql_query_ver1.__main__ import app
 
 runner = CliRunner()
 
@@ -16,7 +15,7 @@ def test_cli_e2e() -> None:
             "--dialect",
             "SQLite",
             "--log-level",
-            "INFO",
+            "DEBUG",
         ],
     )
 
@@ -24,5 +23,4 @@ def test_cli_e2e() -> None:
     ## コマンドが成功して終了したことを確認
     assert result.exit_code == 0
     ## 標準出力の内容を確認
-    assert "Generated SQL Query:" in result.output
-    assert "Explanation:" in result.output
+    assert "select sum(sales) from sales where year = 2023" in result.output

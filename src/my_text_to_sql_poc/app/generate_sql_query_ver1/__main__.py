@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 
-import openai
 import typer
 from loguru import logger
 
@@ -11,15 +10,12 @@ from my_text_to_sql_poc.sql_formatter import format_sql_query
 
 app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
 
-# 環境変数からOpenAI APIキーを設定
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 
 # プロンプトをファイルから読み込む関数
-def load_prompt(file_path: str = "prompts/generate_sql_prompt.txt") -> str:
+def load_prompt(file_path: str) -> str:
     try:
         with open(file_path, "r") as file:
             prompt = file.read()
@@ -64,7 +60,7 @@ def generate_sql_query(
     question: str,
     table_schemas: str,
 ) -> tuple[str, str]:
-    prompt_template = load_prompt("prompts/generate_sql_prompt.txt")
+    prompt_template = load_prompt("prompts/generate_sql_prompt_ver1_jp.txt")
     prompt = prompt_template.format(
         dialect=dialect,
         table_schemas=table_schemas,
@@ -112,9 +108,9 @@ def main(
 
     formatted_sql = format_sql_query(sql_query, dialect)
 
-    typer.echo("\nGenerated SQL Query:\n")
-    typer.echo(f"{formatted_sql}\n")
-    typer.echo(f"Explanation: {explanation}")
+    logger.info(f"\nGenerated SQL Query:\n {formatted_sql}")
+    if explanation:
+        logger.info(f"\nExplanation:\n {explanation}")
 
     logger.info("SQL query generation process completed")
 
