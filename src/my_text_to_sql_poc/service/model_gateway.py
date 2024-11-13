@@ -1,8 +1,8 @@
 import os
 
-import openai
+from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 from loguru import logger
-from openai.types.chat.chat_completion import ChatCompletion
 
 
 class ModelGateway:
@@ -16,18 +16,15 @@ class ModelGateway:
         if not self.api_key:
             raise ValueError("APIキーが設定されていません。環境変数 'OPENAI_API_KEY' を確認してください。")
 
-        self.model_name = model_name
-        openai.api_key = self.api_key
+        self.llm = ChatOpenAI(model=model_name, temperature=0.7)
         self.show_usage_cost = show_usage_cost
 
     def generate_response(self, prompt: str) -> str:
         """生成AIモデルにプロンプトを送信して応答を取得する関数"""
+        request = [HumanMessage(content=prompt)]
         try:
-            response = openai.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            response_text = response.choices[0].message.content
+            response = self.llm.invoke(request)
+            response_text = response.content
             logger.debug(f"Model response: {response_text}")
 
             if self.show_usage_cost:
@@ -38,12 +35,12 @@ class ModelGateway:
             logger.error(f"生成AIモデルのAPI呼び出しに失敗しました: {e}")
             raise
 
-    def _show_usage(self, response: ChatCompletion) -> dict[str, float]:
+    def _show_usage(self, response: BaseMessage) -> None:
         """使用トークン数を取得してコストを計算して表示する関数"""
-        usage = response.usage
-        prompt_tokens = usage.prompt_tokens
-        completion_tokens = usage.completion_tokens
-        total_tokens = usage.total_tokens
+        usage = response.response_metadata["token_usage"]
+        prompt_tokens = usage["prompt_tokens"]
+        completion_tokens = usage["completion_tokens"]
+        total_tokens = usage["total_tokens"]
 
         # コスト計算
         input_cost_dollar = prompt_tokens * (0.15 / 1_000_000)  # $0.15 / 1M tokens
