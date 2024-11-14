@@ -18,8 +18,6 @@ VECTOR_DB_PATH = "sample_vectorstore.duckdb"
 TABLE_SCHEMA_DIR = Path("data/schema/")
 SAMPLE_QUERY_DIR = Path("data/sample_queries/")
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-
 
 def retrieve_relevant_docs(
     question: str,
@@ -134,6 +132,7 @@ def generate_sql_query(
 def main(
     question: str = typer.Option(..., help="The user's question (natural language)"),
     dialect: str = typer.Option("SQLite", help="The SQL dialect to use (default is SQLite)"),
+    log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
 ) -> None:
     """
     自然言語の質問からSQLクエリを生成します。
@@ -142,11 +141,16 @@ def main(
         question (str): ユーザーの質問（自然言語）
         dialect (str): 使用するSQLの方言（デフォルトはSQLite）
     """
+    # ログレベルを設定
+    logger.remove()  # デフォルトのログ設定を削除
+    logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
+
     # ユーザクエリに関連するテーブル達をretrieve
     retrieved_tables = [
         _extract_document_name(doc)
         for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="table_embeddings", k=20)
     ]
+    logger.info(f"Retrieved tables: {retrieved_tables}")
     table_schemas = load_selected_table_schemas(retrieved_tables)
 
     # ユーザクエリに関連するサンプルクエリをretrieve
@@ -154,6 +158,7 @@ def main(
         _extract_document_name(doc)
         for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="query_embeddings", k=2)
     ]
+    logger.info(f"Retrieved sample queries: {retrieved_sample_queries}")
     related_sample_queries = load_selected_sample_queries(retrieved_sample_queries)
 
     sql_query, explanation = generate_sql_query(dialect, question, table_schemas, related_sample_queries)
