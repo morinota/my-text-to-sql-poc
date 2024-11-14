@@ -74,8 +74,33 @@ poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？
 
 ### 1.6.1. 実行例
 
-#### 1.6.1.1. text to sqlアプリver1の実行
+#### 1.6.1.1. text2sqlアプリver1の実行
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver1 --question "各年の売り上げの推移を知りたい" --dialect "DuckDB" --log-level "DEBUG"
+```
+
+#### テーブルスキーマファイルと、サンプルクエリファイルを要約するオフラインバッチの実行
+
+```bash
+poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
+    --schema-dir data/schema \
+    --sample-queries-dir data/sample_queries \
+    --output-schema-dir data/summarized_schema \
+    --output-queries-dir data/summarized_sample_queries
+```
+
+#### テーブル要約とクエリ要約を埋め込み表現に変換して、ベクトルストアに保存するオフラインバッチの実行
+
+```bash
+poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
+    --table-summary-dir data/summarized_schema \
+    --query-summary-dir data/summarized_sample_queries \
+    --vectorstore-file sample_vectorstore.duckdb
+```
+
+#### Text2SQLアプリケーションの実行(RAGによるcontext constructionを活用するver)
+
+```bash
+% poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "各年の売り上げの推移を知りたい" --dialect "SQLite"
 ```
