@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 
 import duckdb
@@ -163,8 +162,6 @@ def main(
 
     sql_query, explanation = generate_sql_query(dialect, question, table_schemas, related_sample_queries)
 
-    # # formatted_sql = format_sql_query(sql_query, dialect)
-    # logger.info(f"\nGenerated SQL Query:\n {formatted_sql}")
     logger.info(f"\nGenerated SQL Query:\n {sql_query}")
     if explanation:
         logger.info(f"\nExplanation:\n {explanation}")
