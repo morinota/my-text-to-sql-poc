@@ -41,9 +41,10 @@ def _load_and_split_documents(directory_path: Path) -> list[Document]:
 def _process_and_store_embeddings(
     documents: list[Document],
     connection: duckdb.DuckDBPyConnection,
+    table_name: str,
 ) -> DuckDB:
     """テキストを読み込み、埋め込みを生成し、DuckDBに保存"""
-    docsearch = DuckDB.from_documents(documents, embeddings_model, connection=connection)
+    docsearch = DuckDB.from_documents(documents, embeddings_model, connection=connection, table_name=table_name)
     return docsearch
 
 
@@ -59,18 +60,29 @@ def main(
     # データベース接続の設定
     conn = duckdb.connect(database=str(vectorstore_file))
 
-    # documentsをロード
-    documents = _load_and_split_documents(table_summary_dir) + _load_and_split_documents(query_summary_dir)
-    logger.info(f"Loaded {len(documents)} documents")
-    # コスト計算
-    _calculate_cost(documents)
+    # テーブルサマリの埋め込みを生成
+    ## documents(テーブルサマリ)を読み込む
+    table_documents = _load_and_split_documents(table_summary_dir)
+    logger.info(f"Loaded {len(table_documents)} documents")
+    ## コスト計算
+    _calculate_cost(table_documents)
+    ## 埋め込み生成と保存
+    _process_and_store_embeddings(table_documents, conn, table_name="table_embeddings")
 
-    # テーブルとクエリの埋め込み生成と保存
-    _process_and_store_embeddings(documents, conn)
+    # クエリサマリの埋め込みを生成
+    ## documents(クエリサマリ)を読み込む
+    query_documents = _load_and_split_documents(query_summary_dir)
+    logger.info(f"Loaded {len(query_documents)} documents")
+    ## コスト計算
+    _calculate_cost(query_documents)
+    ## 埋め込み生成と保存
+    _process_and_store_embeddings(query_documents, conn, table_name="query_embeddings")
 
     # ベクトルデータベースの中身を確認
-    logger.debug(conn.execute("SELECT count(*) FROM embeddings").df())
-    logger.debug(conn.execute("SELECT * FROM embeddings LIMIT 5").df())
+    logger.debug(conn.execute("SELECT count(*) FROM table_embeddings").df())
+    logger.debug(conn.execute("SELECT * FROM table_embeddings LIMIT 5").df())
+    logger.debug(conn.execute("SELECT count(*) FROM query_embeddings").df())
+    logger.debug(conn.execute("SELECT * FROM query_embeddings LIMIT 5").df())
 
 
 if __name__ == "__main__":
