@@ -47,7 +47,7 @@ def load_selected_table_schemas(table_names: list[str] = []) -> str:
             with file_path.open("r") as file:
                 table_data = json.load(file)
                 formatted_schemas += f"Table: {table_data['table_name']}\nColumns: "
-                formatted_schemas += ", ".join([col["name"] for col in table_data["columns"]]) + "\n\n"
+                formatted_schemas += ", ".join([str(col) for col in table_data["columns"]]) + "\n\n"
                 logger.debug(f"Loaded schema for table: {table_name}")
         except Exception as e:
             logger.error(f"Error loading schema for table {table_name}: {e}")
