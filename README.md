@@ -104,3 +104,9 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 ```bash
 % poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "各年の売り上げの推移を知りたい" --dialect "SQLite"
 ```
+
+#### GUIアプリケーションの起動
+
+```bash
+poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
+```
