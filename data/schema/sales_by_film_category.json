@@ -1,8 +1,0 @@
-{
-    "table_name": "sales_by_film_category",
-    "columns": [
-      { "name": "category", "type": "TEXT" },
-      { "name": "total_sales", "type": "DECIMAL" }
-    ]
-  }
-  
