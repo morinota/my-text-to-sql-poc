@@ -14,3 +14,4 @@ data/sample.db
 
 # ignore duckdbファイル
 *.duckdb
+data/
