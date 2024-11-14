@@ -12,6 +12,7 @@ Please document below SQL query by the given table schemas.
 ===Response Guidelines
 Please provide the following list of descriptions for the query:
 
+- The language should be in Japanese 
 - The selected columns and their description
 - The input tables of the query and the join pattern
 - Query's detailed transformation logic in plain english, and why these

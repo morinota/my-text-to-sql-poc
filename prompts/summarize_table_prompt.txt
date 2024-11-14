@@ -10,6 +10,7 @@ Summarize below table by the given context.
 
 ===Response guideline
 
+- The language should be in Japanese 
 - You shall write the summary based only on provided information.
 - Note that above sampled queries are only small sample of queries and thus not all
   possible use of tables are represented, and only some columns in the table are used.
