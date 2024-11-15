@@ -3,7 +3,10 @@ import os
 from pathlib import Path
 
 import typer
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
 from loguru import logger
+from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
 from my_text_to_sql_poc.service.sql_formatter import format_sql_query
@@ -11,7 +14,10 @@ from my_text_to_sql_poc.service.sql_formatter import format_sql_query
 app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
 
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+# 出力データのフォーマットを設定
+class OutputFormat(BaseModel):
+    query: str = Field(description="生成されたSQLクエリ")
+    explanation: str = Field(description="生成されたSQLクエリに関する説明文")
 
 
 # プロンプトをファイルから読み込む関数
@@ -60,7 +66,15 @@ def generate_sql_query(
     question: str,
     table_schemas: str,
 ) -> tuple[str, str]:
-    prompt_template = load_prompt("prompts/generate_sql_prompt_ver1_jp.txt")
+    output_parser = JsonOutputParser(pydantic_object=OutputFormat)
+
+    prompt_template_str = load_prompt("prompts/generate_sql_prompt_ver1_jp.txt")
+    prompt_template = PromptTemplate(
+        template=prompt_template_str + "\n\n{format_instructions}\n",
+        input_variables=["dialect", "table_schemas", "question"],
+        partial_variables={"format_instructions": output_parser.get_format_instructions()},
+    )
+
     prompt = prompt_template.format(
         dialect=dialect,
         table_schemas=table_schemas,

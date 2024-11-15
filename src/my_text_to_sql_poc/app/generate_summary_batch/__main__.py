@@ -115,10 +115,10 @@ def _save_summary(file_path: Path, summary: str) -> None:
 
 @app.command()
 def main(
-    schema_dir: Path = typer.Option(..., help="Directory containing the table schemas"),
+    table_metadata_dir: Path = typer.Option(..., help="Directory containing the table metadata"),
     sample_queries_dir: Path = typer.Option(..., help="Directory containing sample queries"),
-    output_schema_dir: Path = typer.Option(..., help="Output directory for summarized table schemas"),
-    output_queries_dir: Path = typer.Option(..., help="Output directory for summarized queries"),
+    output_table_summary_dir: Path = typer.Option(..., help="Output directory for summarized table schemas"),
+    output_query_summary_dir: Path = typer.Option(..., help="Output directory for summarized queries"),
     full_refresh: bool = typer.Option(False, help="Force full refresh of all summaries"),
     log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
 ):
@@ -126,17 +126,21 @@ def main(
     logger.remove()  # デフォルトのログ設定を削除
     logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
 
+    # 出力ディレクトリが存在しない場合は作成
+    output_table_summary_dir.mkdir(parents=True, exist_ok=True)
+    output_query_summary_dir.mkdir(parents=True, exist_ok=True)
+
     # 洗い替えモードの場合は、サマリ生成前にdocumentsの保存先を空にしておく
     logger.info(f"mode: {full_refresh=}")
     if full_refresh:
-        for file in output_schema_dir.glob("*.txt"):
+        for file in output_table_summary_dir.glob("*.txt"):
             file.unlink()
-        for file in output_queries_dir.glob("*.txt"):
+        for file in output_query_summary_dir.glob("*.txt"):
             file.unlink()
 
-    table_names = [f.stem for f in schema_dir.glob("*.txt")]
+    table_names = [f.stem for f in table_metadata_dir.glob("*.txt")]
     for table in table_names:
-        output_path = output_schema_dir / f"{table}.txt"
+        output_path = output_table_summary_dir / f"{table}.txt"
         logger.debug(f"Output path: {output_path}")
         # 差分更新チェック: すでにサマリファイルが存在している場合はスキップ
         if not full_refresh and output_path.exists():
@@ -145,12 +149,12 @@ def main(
 
         logger.info(f"Processing table: {table}")
         related_queries = find_related_queries(table, sample_queries_dir)
-        table_summary = summarize_table_schema(table, related_queries, schema_dir, SCHEMA_PROMPT_PATH)
+        table_summary = summarize_table_schema(table, related_queries, table_metadata_dir, SCHEMA_PROMPT_PATH)
         _save_summary(output_path, table_summary)
 
     query_files = sample_queries_dir.glob("*.sql")
     for query_file in query_files:
-        output_path = output_queries_dir / f"{query_file.stem}.txt"
+        output_path = output_query_summary_dir / f"{query_file.stem}.txt"
         # 差分更新チェック：既存ファイルがある場合はスキップ
         if not full_refresh and output_path.exists():
             logger.info(f"Skipping query {query_file.stem} as summary already exists")
@@ -160,7 +164,7 @@ def main(
         with query_file.open() as f:
             query = f.read()
         related_tables = extract_related_tables(query)
-        query_summary = summarize_query(query, related_tables, schema_dir, QUERY_PROMPT_PATH)
+        query_summary = summarize_query(query, related_tables, table_metadata_dir, QUERY_PROMPT_PATH)
         _save_summary(output_path, query_summary)
 
 

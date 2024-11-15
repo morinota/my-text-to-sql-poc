@@ -23,7 +23,8 @@ prompt = PromptTemplate(
     input_variables=["query"],
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
+print(prompt.format(query=joke_query))
 
 chain = prompt | model | parser
 
-print(chain.invoke({"query": joke_query}))
+# print(chain.invoke({"query": joke_query}))

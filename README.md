@@ -96,10 +96,10 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
-    --schema-dir data/schema \
+    --table-metadata-dir data/table_metadata \
     --sample-queries-dir data/sample_queries \
-    --output-schema-dir data/summarized_schema \
-    --output-queries-dir data/summarized_sample_queries \
+    --output-table-summary-dir data/summarized_table \
+    --output-query-summary-dir data/summarized_sample_query \
     --full-refresh
 ```
 
@@ -122,4 +122,14 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 
 ```bash
 poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
+```
+
+#### 自動でテーブルメタデータを生成するオフラインのバッチジョブを実行
+
+```bash
+poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+        --table-schema-dir data/summarized_schema \
+        --sample-queries-dir data/summarized_sample_queries \
+        --table-metadata-dir data/table_metadata \
+        --full-refresh
 ```

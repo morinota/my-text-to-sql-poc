@@ -17,7 +17,7 @@ app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーショ�
 
 MODEL_NAME = "text-embedding-3-small"
 VECTOR_DB_PATH = "sample_vectorstore.duckdb"
-TABLE_SCHEMA_DIR = Path("data/schema/")
+TABLE_METADATA_DIR = Path("data/table_metadata/")
 SAMPLE_QUERY_DIR = Path("data/sample_queries/")
 
 
@@ -63,13 +63,13 @@ def load_prompt(file_path: str) -> str:
         raise
 
 
-def load_selected_table_schemas(table_names: list[str]) -> str:
-    """テーブルスキーマを読み込んで、まとめて返す"""
+def load_selected_table_metadata(table_names: list[str]) -> str:
+    """テーブルスメタデータを読み込んで、まとめて返す"""
     table_schemas = []
 
-    available_tables = [file.stem for file in TABLE_SCHEMA_DIR.glob("*.txt")]
+    available_tables = [file.stem for file in TABLE_METADATA_DIR.glob("*.txt")]
     for table_name in table_names:
-        file_path = TABLE_SCHEMA_DIR / f"{table_name}.txt"
+        file_path = TABLE_METADATA_DIR / f"{table_name}.txt"
         if table_name not in available_tables or not file_path.exists():
             raise FileNotFoundError(
                 f"Schema file not found for table: {table_name}\n Available tables: {available_tables}"
@@ -109,7 +109,7 @@ def load_selected_sample_queries(querie_names: list[str]) -> str:
 def generate_sql_query(
     dialect: str,
     question: str,
-    table_schemas: str,
+    tables_metadata: str,
     related_sample_queries: str,
 ) -> tuple[str, str]:
     prompt_template_str = load_prompt("prompts/generate_sql_prompt_ver2_jp.txt")
@@ -123,7 +123,7 @@ def generate_sql_query(
     )
     prompt = prompt_template.format(
         dialect=dialect,
-        table_schemas=table_schemas,
+        table_schemas=tables_metadata,
         original_query=question,
         question=question,
         related_sample_queries=related_sample_queries,
@@ -167,7 +167,7 @@ def main(
         for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="table_embeddings", k=20)
     ]
     logger.info(f"Retrieved tables: {retrieved_tables}")
-    table_schemas = load_selected_table_schemas(retrieved_tables)
+    table_schemas = load_selected_table_metadata(retrieved_tables)
 
     # ユーザクエリに関連するサンプルクエリをretrieve
     retrieved_sample_queries = [
