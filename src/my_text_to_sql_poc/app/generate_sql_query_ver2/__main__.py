@@ -5,8 +5,11 @@ import duckdb
 import typer
 from langchain_community.docstore.document import Document
 from langchain_community.vectorstores import DuckDB
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
+from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
 
@@ -16,6 +19,12 @@ MODEL_NAME = "text-embedding-3-small"
 VECTOR_DB_PATH = "sample_vectorstore.duckdb"
 TABLE_SCHEMA_DIR = Path("data/schema/")
 SAMPLE_QUERY_DIR = Path("data/sample_queries/")
+
+
+# 出力データのフォーマットを設定
+class OutputFormat(BaseModel):
+    query: str = Field(description="生成されたSQLクエリ")
+    explanation: str = Field(description="生成されたSQLクエリに関する説明文")
 
 
 def retrieve_relevant_docs(
@@ -103,7 +112,15 @@ def generate_sql_query(
     table_schemas: str,
     related_sample_queries: str,
 ) -> tuple[str, str]:
-    prompt_template = load_prompt("prompts/generate_sql_prompt_ver2_jp.txt")
+    prompt_template_str = load_prompt("prompts/generate_sql_prompt_ver2_jp.txt")
+
+    output_parser = JsonOutputParser(pydantic_object=OutputFormat)
+
+    prompt_template = PromptTemplate(
+        template=prompt_template_str + "\n\n{format_instructions}\n",
+        input_variables=["dialect", "table_schemas", "original_query", "question", "related_sample_queries"],
+        partial_variables={"format_instructions": output_parser.get_format_instructions()},
+    )
     prompt = prompt_template.format(
         dialect=dialect,
         table_schemas=table_schemas,
