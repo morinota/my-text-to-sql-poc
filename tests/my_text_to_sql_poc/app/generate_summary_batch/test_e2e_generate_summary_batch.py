@@ -9,7 +9,8 @@ from my_text_to_sql_poc.app.generate_summary_batch.__main__ import app
 runner = CliRunner()
 
 
-def test_summarize_app_e2e(mocker: MockerFixture):
+def test_summarize_app_with_full_refresh(mocker: MockerFixture):
+    """すべてのサマリを洗い替えするモードの実行"""
     with runner.isolated_filesystem():
         # Arrange
 
@@ -35,15 +36,9 @@ def test_summarize_app_e2e(mocker: MockerFixture):
         summarized_sample_queries_dir.mkdir(parents=True, exist_ok=True)
 
         ### テーブルスキーマの用意
-        hoge_table_schema = {
-            "table_name": "hoge_table",
-            "columns": [
-                {"name": "id", "type": "INTEGER", "primary_key": True},
-                {"name": "name", "type": "TEXT", "nullable": False},
-            ],
-        }
-        with open(schema_dir / "hoge_table.json", "w") as f:
-            json.dump(hoge_table_schema, f)
+        hoge_table_schema = "create table hoge (id int, name text);"
+        with open(schema_dir / "hoge_table.txt", "w") as f:
+            f.write(hoge_table_schema)
 
         ### サンプルクエリの用意
         sample_query = """

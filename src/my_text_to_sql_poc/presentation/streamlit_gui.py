@@ -1,10 +1,14 @@
+import re
 import subprocess
 
 import streamlit as st
 
 # ユーザクエリを入力するテキストボックス
 st.title("Text to SQL Generator")
-user_query = st.text_area("自然言語で質問を入力してください:", placeholder="例: 2023年の売上合計は？")
+user_query = st.text_area(
+    "自然言語で質問を入力してください:",
+    value="例: 直近1週間のCTRの推移は??",
+)
 
 # SQL方言を選択するドロップダウン
 sql_dialect = st.selectbox("SQL方言を選択してください:", ["SQLite", "PostgreSQL", "MySQL", "Redshift", "Snowflake"])
@@ -33,10 +37,22 @@ if st.button("SQLクエリを生成"):
             text=True,
             check=True,
         )
-        # 標準出力から生成されたSQLクエリを取得
+        # 標準出力全体を表示
+        st.subheader("CLI標準出力")
+        st.text_area("標準出力", result.stdout, height=300)
+        st.text_area("標準エラー", result.stderr, height=150)
 
-        raise
-        generated_sql.text_area("生成されたSQLクエリ:", generated_sql_query)
+        # 標準出力から生成されたSQLクエリを取得
+        sql_query_match = re.search(r"Generated SQL Query:\s+([\s\S]+?)\n\n", result.stdout, re.DOTALL)
+        explanation_match = re.search(r"Explanation:\s+([\s\S]+?)\n\n", result.stdout, re.DOTALL)
+
+        # if not sql_query_match:
+        #     raise ValueError("Failed to extract generated SQL")
+        # generated_sql.text_area("生成されたSQLクエリ:", sql_query_match.group(1).strip())
+
+        # if explanation_match:
+        #     st.text_area("説明文:", explanation_match.group(1).strip())
+
     except subprocess.CalledProcessError as e:
         st.error(f"SQLクエリの生成に失敗しました: {e.stderr}")
 

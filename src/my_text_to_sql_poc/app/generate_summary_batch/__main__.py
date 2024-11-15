@@ -7,13 +7,18 @@ import openai
 import typer
 from loguru import logger
 
-from my_text_to_sql_poc.service.model_gateway import ModelGateway  # ModelGatewayをインポート
+from my_text_to_sql_poc.service.model_gateway import ModelGateway
+from my_text_to_sql_poc.service.related_table_extractor import extract_related_tables  # ModelGatewayをインポート
 
 app = typer.Typer()
 
 # OpenAI APIの設定
 openai.api_key = os.getenv("OPENAI_API_KEY")
 MODEL_NAME = "gpt-4o-mini"
+
+# プロンプトの設定
+QUERY_PROMPT_PATH = Path("prompts/summarize_query_prompt_jp.txt")
+SCHEMA_PROMPT_PATH = Path("prompts/summarize_table_prompt_jp.txt")
 
 
 def load_prompt(file_path: Path) -> str:
@@ -42,31 +47,6 @@ def find_related_queries(table_name: str, sample_queries_dir: Path) -> set[str]:
                 related_queries.add(query)
 
     return related_queries
-
-
-def extract_related_tables(query: str) -> set[str]:
-    """
-    SQLクエリから関連するテーブル名を抽出する関数。
-    :param query: SQLクエリ文字列
-    :return: 抽出されたテーブル名の集合
-    """
-    table_names = set()
-    # FROM、JOINキーワードの後に続くテーブル名を正規表現で取得(スキーマを含む)
-    # table_pattern = re.compile(r"(?:FROM|JOIN)\s+(\w+)", re.IGNORECASE)
-    table_pattern = re.compile(r"(?:FROM|JOIN)\s+(\w+(?:\.\w+)?)", re.IGNORECASE)
-
-    # CTE(Common Table Expression, with句で定義される一時テーブル)を除外
-    cte_pattern = re.compile(r"WITH\s+\w+\s+AS", re.IGNORECASE)
-
-    matche_tables = table_pattern.findall(query)
-    cte_tables = cte_pattern.findall(query)
-    for match_table in matche_tables:
-        # CTEの場合はスキップ
-        if match_table in cte_tables:
-            continue
-        table_names.add(match_table.lower())  # 重複テーブル名を避けるために小文字化
-
-    return table_names
 
 
 def summarize_table_schema(
@@ -139,30 +119,49 @@ def main(
     sample_queries_dir: Path = typer.Option(..., help="Directory containing sample queries"),
     output_schema_dir: Path = typer.Option(..., help="Output directory for summarized table schemas"),
     output_queries_dir: Path = typer.Option(..., help="Output directory for summarized queries"),
-    schema_prompt_path: Path = typer.Option("prompts/summarize_table_prompt.txt", help="Path to table schema prompt"),
-    query_prompt_path: Path = typer.Option("prompts/summarize_query_prompt.txt", help="Path to query prompt"),
+    full_refresh: bool = typer.Option(False, help="Force full refresh of all summaries"),
+    log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
 ):
-    # サマリ生成前にdocumentsの保存先を空にしておく
-    for file in output_schema_dir.glob("*.txt"):
-        file.unlink()
-    # for file in output_queries_dir.glob("*.txt"):
-    #     file.unlink()
+    # ログレベルを設定
+    logger.remove()  # デフォルトのログ設定を削除
+    logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
+
+    # 洗い替えモードの場合は、サマリ生成前にdocumentsの保存先を空にしておく
+    logger.info(f"mode: {full_refresh=}")
+    if full_refresh:
+        for file in output_schema_dir.glob("*.txt"):
+            file.unlink()
+        for file in output_queries_dir.glob("*.txt"):
+            file.unlink()
 
     table_names = [f.stem for f in schema_dir.glob("*.txt")]
     for table in table_names:
-        logger.info(f"Processing table: {table}")
-        sample_queries = find_related_queries(table, sample_queries_dir)
-        table_summary = summarize_table_schema(table, sample_queries, schema_dir, schema_prompt_path)
-        _save_summary(output_schema_dir / f"{table}.txt", table_summary)
+        output_path = output_schema_dir / f"{table}.txt"
+        logger.debug(f"Output path: {output_path}")
+        # 差分更新チェック: すでにサマリファイルが存在している場合はスキップ
+        if not full_refresh and output_path.exists():
+            logger.info(f"Summary for {table} already exists, skipping")
+            continue
 
-    # query_files = sample_queries_dir.glob("*.sql")
-    # for query_file in query_files:
-    #     logger.info(f"Processing query: {query_file}")
-    #     with query_file.open() as f:
-    #         query = f.read()
-    #     related_tables = extract_related_tables(query)
-    #     query_summary = summarize_query(query, related_tables, schema_dir, query_prompt_path)
-    #     _save_summary(output_queries_dir / f"{query_file.stem}.txt", query_summary)
+        logger.info(f"Processing table: {table}")
+        related_queries = find_related_queries(table, sample_queries_dir)
+        table_summary = summarize_table_schema(table, related_queries, schema_dir, SCHEMA_PROMPT_PATH)
+        _save_summary(output_path, table_summary)
+
+    query_files = sample_queries_dir.glob("*.sql")
+    for query_file in query_files:
+        output_path = output_queries_dir / f"{query_file.stem}.txt"
+        # 差分更新チェック：既存ファイルがある場合はスキップ
+        if not full_refresh and output_path.exists():
+            logger.info(f"Skipping query {query_file.stem} as summary already exists")
+            continue
+
+        logger.info(f"Processing query: {query_file}")
+        with query_file.open() as f:
+            query = f.read()
+        related_tables = extract_related_tables(query)
+        query_summary = summarize_query(query, related_tables, schema_dir, QUERY_PROMPT_PATH)
+        _save_summary(output_path, query_summary)
 
 
 if __name__ == "__main__":

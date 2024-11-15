@@ -155,7 +155,7 @@ def main(
     # ユーザクエリに関連するサンプルクエリをretrieve
     retrieved_sample_queries = [
         _extract_document_name(doc)
-        for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="query_embeddings", k=2)
+        for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="query_embeddings", k=5)
     ]
     logger.info(f"Retrieved sample queries: {retrieved_sample_queries}")
     related_sample_queries = load_selected_sample_queries(retrieved_sample_queries)

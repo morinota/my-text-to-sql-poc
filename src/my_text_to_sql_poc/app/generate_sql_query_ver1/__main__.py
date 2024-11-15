@@ -6,7 +6,7 @@ import typer
 from loguru import logger
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
-from my_text_to_sql_poc.sql_formatter import format_sql_query
+from my_text_to_sql_poc.service.sql_formatter import format_sql_query
 
 app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
 
