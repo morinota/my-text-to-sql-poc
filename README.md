@@ -82,12 +82,25 @@ poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver1 --question "
 
 #### テーブルスキーマファイルと、サンプルクエリファイルを要約するオフラインバッチの実行
 
+差分更新
+
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
     --schema-dir data/schema \
     --sample-queries-dir data/sample_queries \
     --output-schema-dir data/summarized_schema \
     --output-queries-dir data/summarized_sample_queries
+```
+
+全更新
+
+```bash
+poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
+    --schema-dir data/schema \
+    --sample-queries-dir data/sample_queries \
+    --output-schema-dir data/summarized_schema \
+    --output-queries-dir data/summarized_sample_queries \
+    --full-refresh
 ```
 
 #### テーブル要約とクエリ要約を埋め込み表現に変換して、ベクトルストアに保存するオフラインバッチの実行
@@ -102,7 +115,7 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 #### Text2SQLアプリケーションの実行(RAGによるcontext constructionを活用するver)
 
 ```bash
-% poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "各年の売り上げの推移を知りたい" --dialect "SQLite"
+% poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "直近2週間の各カテゴリのCTRの推移を知りたい" --dialect "Redshift" 
 ```
 
 #### GUIアプリケーションの起動
