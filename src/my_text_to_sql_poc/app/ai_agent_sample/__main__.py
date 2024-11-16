@@ -13,16 +13,6 @@ search = TavilySearchResults(max_results=2)
 # == load the prompt from the config ==
 config = OmegaConf.load("./src/my_text_to_sql_poc/app/ai_agent_sample/prompts.yaml")
 
-chat_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", "You are a helpful AI bot. Your name is {name}."),
-        ("human", "Hello, how are you doing?"),
-        ("ai", "I'm doing well, thanks!"),
-        ("human", "{user_input}"),
-    ]
-)
-sample_prompt = chat_template.format_messages(name="Bob", user_input="What is your name?")
-
 writer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", config.writer_prompt.messages[0].content),

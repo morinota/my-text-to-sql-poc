@@ -107,15 +107,15 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
-    --table-summary-dir data/summarized_schema \
-    --query-summary-dir data/summarized_sample_queries \
+    --table-summary-dir data/summarized_table \
+    --query-summary-dir data/summarized_sample_query \
     --vectorstore-file sample_vectorstore.duckdb
 ```
 
 #### Text2SQLアプリケーションの実行(RAGによるcontext constructionを活用するver)
 
 ```bash
-% poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "直近2週間の各カテゴリのCTRの推移を知りたい" --dialect "Redshift" 
+poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver2 --question "直近2週間の各カテゴリのCTRの推移を知りたい" --dialect "Redshift" 
 ```
 
 #### GUIアプリケーションの起動
@@ -128,8 +128,7 @@ poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
-        --table-schema-dir data/summarized_schema \
-        --sample-queries-dir data/summarized_sample_queries \
+        --audit-log-path data/redshift_audit_log.csv \
         --table-metadata-dir data/table_metadata \
         --full-refresh
 ```

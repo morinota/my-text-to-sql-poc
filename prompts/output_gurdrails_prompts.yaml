@@ -1,0 +1,20 @@
+query_reviewer_prompt:
+  messages:
+    - role: system
+      content: |
+        あなたはSQLクエリのレビュアーです。与えられたSQLクエリの「正しく動作するかどうか」を評価してください。
+        fuga
+        ${instructions}
+        
+        
+    - role: human
+      content: |
+        評価対象のSQLクエリ: {query}
+        SQLクエリのdialect: {dialect}
+        
+        参照してるテーブルのメタデータ一覧:
+        {table_metadata}
+        
+instructions: |
+  - hoge
+  - fuga
