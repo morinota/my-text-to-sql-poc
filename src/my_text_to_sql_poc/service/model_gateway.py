@@ -1,6 +1,7 @@
 import os
-from typing import Any
+from typing import Any, Optional
 
+import pydantic
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema.messages import HumanMessage
 from langchain_core.outputs import LLMResult
@@ -78,6 +79,16 @@ class ModelGateway:
         except Exception as e:
             logger.error(f"生成AIモデルのAPI呼び出しに失敗しました: {e}")
             raise
+
+    def generate_response_with_schema(
+        self,
+        prompt: str,
+        output_schema: pydantic.BaseModel,
+    ) -> Optional[pydantic.BaseModel]:
+        """生成AIモデルにプロンプトを送信して応答を取得し、スキーマに従ってパースする関数"""
+        response = self.llm.with_structured_output(output_schema).invoke([HumanMessage(content=prompt)])
+        logger.debug(f"Model response: {response}")
+        return response
 
 
 if __name__ == "__main__":
