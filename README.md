@@ -126,9 +126,19 @@ poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
 
 #### 自動でテーブルメタデータを生成するオフラインのバッチジョブを実行
 
+全更新
+
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
         --audit-log-path data/redshift_audit_log.csv \
         --table-metadata-dir data/table_metadata \
         --full-refresh
+```
+
+差分更新
+
+```bash
+poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+        --audit-log-path data/redshift_audit_log.csv \
+        --table-metadata-dir data/table_metadata
 ```
