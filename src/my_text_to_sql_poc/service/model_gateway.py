@@ -80,7 +80,7 @@ class ModelGateway:
             logger.error(f"生成AIモデルのAPI呼び出しに失敗しました: {e}")
             raise
 
-    def generate_response_with_schema(
+    def generate_response_with_structured_output(
         self,
         prompt: str,
         output_schema: pydantic.BaseModel,
