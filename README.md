@@ -80,7 +80,7 @@ poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？
 poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver1 --question "各年の売り上げの推移を知りたい" --dialect "DuckDB" --log-level "DEBUG"
 ```
 
-#### テーブルメタデータと、サンプルクエリファイルを要約するオフラインバッチの実行
+#### テーブルメタデータとサンプルクエリファイルを要約するオフラインバッチの実行
 
 差分更新
 
@@ -115,7 +115,10 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 #### Text2SQLアプリケーションの実行(RAGによるcontext constructionを活用するver)
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.generate_sql_query --question "直近2週間の各カテゴリのCTRの推移を知りたい" --dialect "Redshift" 
+% poetry run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
+    --question "2023年の売上合計を知りたい" \
+    --dialect SQLite \
+    --log-level INFO
 ```
 
 #### GUIアプリケーションの起動
