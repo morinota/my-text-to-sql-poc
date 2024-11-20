@@ -3,6 +3,8 @@ import subprocess
 
 import streamlit as st
 
+from my_text_to_sql_poc.app.generate_sql_query.text2sql_facade import Text2SQLFacade
+
 # ユーザクエリを入力するテキストボックス
 st.title("Text to SQL Generator")
 user_query = st.text_area(
@@ -17,44 +19,20 @@ sql_dialect = st.selectbox("SQL方言を選択してください:", ["SQLite", "
 st.subheader("生成されたSQLクエリ")
 generated_sql = st.empty()  # クエリ出力用のプレースホルダ
 
+# Text2SQLFacadeのインスタンス
+facade = Text2SQLFacade()
+
 # 「生成」ボタンを押すとSQLクエリ生成CLIを呼び出し
 if st.button("SQLクエリを生成"):
-    # subprocessでCLIコマンドを呼び出す
     try:
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "my_text_to_sql_poc.app.generate_sql_query_ver2",
-                "--question",
-                user_query,
-                "--dialect",
-                sql_dialect,
-                "--log-level",
-                "DEBUG",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # 標準出力全体を表示
-        st.subheader("CLI標準出力")
-        st.text_area("標準出力", result.stdout, height=300)
-        st.text_area("標準エラー", result.stderr, height=150)
-
-        # 標準出力から生成されたSQLクエリを取得
-        sql_query_match = re.search(r"Generated SQL Query:\s+([\s\S]+?)\n\n", result.stdout, re.DOTALL)
-        explanation_match = re.search(r"Explanation:\s+([\s\S]+?)\n\n", result.stdout, re.DOTALL)
-
-        # if not sql_query_match:
-        #     raise ValueError("Failed to extract generated SQL")
-        # generated_sql.text_area("生成されたSQLクエリ:", sql_query_match.group(1).strip())
-
-        # if explanation_match:
-        #     st.text_area("説明文:", explanation_match.group(1).strip())
-
-    except subprocess.CalledProcessError as e:
-        st.error(f"SQLクエリの生成に失敗しました: {e.stderr}")
+        # SQLクエリ生成
+        sql_query, explanation = facade.process_query(user_query, sql_dialect)
+        st.success("SQLクエリが生成されました")
+        st.text_area("生成されたSQLクエリ:", sql_query, height=200)
+        if explanation:
+            st.text_area("説明:", explanation, height=150)
+    except Exception as e:
+        st.error(f"SQLクエリの生成に失敗しました: {e}")
 
 # オフラインバッチを実行するためのボタン
 st.subheader("オフラインバッチ実行")
