@@ -1,5 +1,5 @@
 import os
-from typing import Any, Optional
+from typing import Any, TypeVar
 
 import pydantic
 from langchain.callbacks.base import BaseCallbackHandler
@@ -7,6 +7,9 @@ from langchain.schema.messages import HumanMessage
 from langchain_core.outputs import LLMResult
 from langchain_openai import ChatOpenAI
 from loguru import logger
+
+# ジェネリック型を定義
+T = TypeVar("T", bound=pydantic.BaseModel)
 
 
 class TokenUsageLoggingHandler(BaseCallbackHandler):
@@ -83,12 +86,21 @@ class ModelGateway:
     def generate_response_with_structured_output(
         self,
         prompt: str,
-        output_schema: pydantic.BaseModel,
-    ) -> Optional[pydantic.BaseModel]:
-        """生成AIモデルにプロンプトを送信して応答を取得し、スキーマに従ってパースする関数"""
+        output_schema: type[T],  # Pydanticモデルクラスそのものを受け取る
+    ) -> T:  # output_schemaで指定された型のインスタンスを返す
+        """
+        プロンプトを送信し、スキーマに従って応答を取得する。
+
+        Args:
+            prompt (str): 生成AIへのプロンプト文字列
+            output_schema (Type[T]): 出力データ形式を定義するPydanticモデルクラス
+
+        Returns:
+            T: 指定されたスキーマのインスタンス
+        """
         response = self.llm.with_structured_output(output_schema).invoke([HumanMessage(content=prompt)])
         logger.debug(f"Model response: {response}")
-        return response
+        return response  # type: ignore
 
 
 if __name__ == "__main__":
