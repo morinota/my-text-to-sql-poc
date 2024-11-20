@@ -1,11 +1,9 @@
-import json
 from pathlib import Path
 
 import duckdb
 import typer
 from langchain_community.docstore.document import Document
 from langchain_community.vectorstores import DuckDB
-from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
@@ -108,12 +106,10 @@ class Text2SQLFacade:
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str
     ) -> tuple[str, str]:
         prompt_template_str = Path("prompts/generate_sql_prompt_ver2_jp.txt").read_text()
-        output_parser = JsonOutputParser(pydantic_object=OutputFormat)
 
         prompt_template = PromptTemplate(
-            template=prompt_template_str + "\n\n{format_instructions}\n",
+            template=prompt_template_str,
             input_variables=["dialect", "table_schemas", "original_query", "question", "related_sample_queries"],
-            partial_variables={"format_instructions": output_parser.get_format_instructions()},
         )
         prompt = prompt_template.format(
             dialect=dialect,
@@ -122,13 +118,12 @@ class Text2SQLFacade:
             question=question,
             related_sample_queries=related_sample_queries,
         )
-        response_text = self.model_gateway.generate_response(prompt)
+        response = self.model_gateway.generate_response_with_structured_output(prompt, OutputFormat)
 
         # レスポンスの本文からqueryフィールドとexplanationフィールドを取得
         ## 不要なバッククォートと「json」記法を削除(レスポンスにmarkdown記法のコードブロックが含まれることがあるため)
-        cleaned_response_text = response_text.strip("```json").strip("```").strip()
-        response_data = json.loads(cleaned_response_text)
-        return response_data["query"], response_data.get("explanation", "")
+
+        return response.query, response.explanation
 
 
 # @app.command()
