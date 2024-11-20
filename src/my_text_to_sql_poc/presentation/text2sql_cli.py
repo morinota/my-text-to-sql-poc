@@ -3,7 +3,7 @@ import os
 import typer
 from loguru import logger
 
-from my_text_to_sql_poc.app.generate_sql_query.text2sql_facade import Text2SQLFacade
+from my_text_to_sql_poc.app.text2sql.text2sql_facade import Text2SQLFacade
 
 app = typer.Typer(pretty_exceptions_enable=False)
 

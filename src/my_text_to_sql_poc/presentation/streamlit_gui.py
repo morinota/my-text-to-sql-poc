@@ -3,7 +3,7 @@ import subprocess
 
 import streamlit as st
 
-from my_text_to_sql_poc.app.generate_sql_query.text2sql_facade import Text2SQLFacade
+from my_text_to_sql_poc.app.text2sql.text2sql_facade import Text2SQLFacade
 
 # ユーザクエリを入力するテキストボックス
 st.title("Text to SQL Generator")
