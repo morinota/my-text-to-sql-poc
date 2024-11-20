@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class ColumnMetadataSchema(BaseModel):
     column_name: str = Field(description="カラム名")
     column_type: str = Field(description="カラムのデータ型")
-    summary: str = Field(description="カラムの概要。低cardinalityの場合はカラムの値の種類も記載する。")
+    summary: str = Field(description="カラムの概要。低cardinalityの場合はカラムの値の種類も記載して")
 
 
 class SampleQuerySchema(BaseModel):
