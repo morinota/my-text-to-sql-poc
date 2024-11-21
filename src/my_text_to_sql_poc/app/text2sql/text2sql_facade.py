@@ -4,7 +4,7 @@ import duckdb
 import typer
 from langchain_community.docstore.document import Document
 from langchain_community.vectorstores import DuckDB
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 from omegaconf import OmegaConf
@@ -14,20 +14,21 @@ from my_text_to_sql_poc.service.model_gateway import ModelGateway
 
 app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
 
-MODEL_NAME = "text-embedding-3-small"
-VECTOR_DB_PATH = "sample_vectorstore.duckdb"
-TABLE_METADATA_DIR = Path("data/table_metadata/")
-SAMPLE_QUERY_DIR = Path("data/sample_queries/")
 PROMPT_CONFIG = OmegaConf.load("prompts/generate_sql_prompt_ver2_jp.yaml")
 
 
 # 出力データのフォーマットを設定
 class OutputFormat(BaseModel):
-    query: str = Field(description="生成されたSQLクエリ")
+    query: str = Field(
+        description="生成されたSQLクエリ。コマンドは大文字ではなく小文字で書くこと。可読性を重視して改行すること。CTEの名前はアンダースコアから始めること"
+    )
     explanation: str = Field(description="生成されたSQLクエリに関する説明文")
 
 
 class Text2SQLFacade:
+    GENERATER_PROMPT_TEMPLATE = Path("prompts/generate_sql_prompt_ver2_jp.txt")
+    REVIEWER_PROMPT_TEMPLATE = Path("prompts/generate_sql_prompt_ver2_jp.yaml")
+
     def __init__(
         self,
         vector_db_path: str = "sample_vectorstore.duckdb",
@@ -41,27 +42,72 @@ class Text2SQLFacade:
         self.sample_query_dir = sample_query_dir
         self.model_gateway = ModelGateway()
 
-    def process_query(self, question: str, dialect: str) -> tuple[str, str]:
+        prompt_config = OmegaConf.load(self.REVIEWER_PROMPT_TEMPLATE)
+        self.reviewer_prompt_template = ChatPromptTemplate(
+            messages=[(message.role, message.content) for message in prompt_config.reviewer_prompt.messages]
+        )
+
+    def all_process(self, question: str, dialect: str) -> tuple[str, str]:
         """
-        自然言語の質問からSQLクエリと説明文を生成します。
+        自然言語の質問からSQLクエリと説明文を生成する、一連の処理を実行します
         """
         # Retrieve relevant tables
-        retrieved_table_names = [
-            Path(doc.metadata["source"]).stem
-            for doc in self._retrieve_relevant_docs(question, table_name="table_embeddings", k=20)
-        ]
-        print(retrieved_table_names)
-        table_schemas = self._load_selected_table_metadata(retrieved_table_names)
+        related_metadata_by_table = self.retrieve_related_tables(question, k=20)
+        tables_metadata = "\n\n".join(related_metadata_by_table.values())
+        logger.info(f"Retrieved tables: {related_metadata_by_table.keys()}")
 
         # Retrieve related sample queries
-        retrieved_sample_queries = [
-            Path(doc.metadata["source"]).stem
-            for doc in self._retrieve_relevant_docs(question, table_name="query_embeddings", k=5)
-        ]
-        related_sample_queries = self._load_selected_sample_queries(retrieved_sample_queries)
+        related_sql_by_query_name = self.retrieve_related_sample_queries(question, k=10)
+        related_sample_queries = "\n\n".join(related_sql_by_query_name.values())
+        logger.info(f"Retrieved sample queries: {related_sql_by_query_name.keys()}")
 
         # Generate SQL query and explanation
-        return self._generate_sql_query(dialect, question, table_schemas, related_sample_queries)
+        sql_query, explanation = self.text2sql(question, dialect, tables_metadata, related_sample_queries)
+        return sql_query, explanation
+
+    def retrieve_related_tables(self, question: str, k: int = 20) -> dict[str, str]:
+        """質問に関連するテーブルをretrieveして返す
+        返り値dictの key はテーブル名、value はテーブルのスキーマ
+        """
+        retrieved_table_names = [
+            Path(doc.metadata["source"]).stem
+            for doc in self._retrieve_relevant_docs(question, table_name="table_embeddings", k=k)
+        ]
+
+        metadata_by_table = self._load_selected_table_metadata(retrieved_table_names)
+        return metadata_by_table
+
+    def retrieve_related_sample_queries(self, question: str, k: int = 20) -> dict[str, str]:
+        """質問に関連するサンプルクエリをretrieveして返す
+        返り値dictの key はクエリ名、value はクエリの内容
+        """
+        retrieved_query_names = [
+            Path(doc.metadata["source"]).stem
+            for doc in self._retrieve_relevant_docs(question, table_name="query_embeddings", k=k)
+        ]
+
+        related_sample_queries = self._load_selected_sample_queries(retrieved_query_names)
+        return related_sample_queries
+
+    def text2sql(
+        self, question: str, dialect: str, tables_metadata: str, related_sample_queries: str
+    ) -> tuple[str, str]:
+        """テキストからSQLクエリを生成する"""
+
+        generated_sql_query, explanation = self._generate_sql_query(
+            dialect=dialect,
+            question=question,
+            tables_metadata=tables_metadata,
+            related_sample_queries=related_sample_queries,
+        )
+        return self._output_guardrails(
+            question=question,
+            dialect=dialect,
+            tables_metadata=tables_metadata,
+            related_sample_queries=related_sample_queries,
+            generated_sql_query=generated_sql_query,
+            explanation=explanation,
+        )
 
     def _retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list[Document]:
         """ベクトルストアを読み込み、質問に関連するドキュメントをretrieveする"""
@@ -70,9 +116,9 @@ class Text2SQLFacade:
         vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
         return vectorstore.similarity_search(question, k=k)
 
-    def _load_selected_table_metadata(self, table_names: list[str]) -> str:
-        """テーブルスメタデータを読み込んで、まとめて返す"""
-        table_schemas = []
+    def _load_selected_table_metadata(self, table_names: list[str]) -> dict[str, str]:
+        """テーブルスメタデータを読み込んで、dict形式で返す"""
+        metadata_by_table = {}
         available_tables = [file.stem for file in self.table_metadata_dir.glob("*.txt")]
 
         for table_name in table_names:
@@ -83,12 +129,12 @@ class Text2SQLFacade:
                 )
             with file_path.open("r") as file:
                 table_data = file.read()
-                table_schemas.append(table_data)
-        return "\n\n".join(table_schemas)
+                metadata_by_table[table_name] = table_data
+        return metadata_by_table
 
-    def _load_selected_sample_queries(self, query_names: list[str]) -> str:
-        """サンプルクエリを読み込んで、まとめて返す"""
-        sample_queries = []
+    def _load_selected_sample_queries(self, query_names: list[str]) -> dict[str, str]:
+        """サンプルクエリを読み込んで、dict形式で返す"""
+        sql_by_query_name = {}
         available_queries = [file.stem for file in self.sample_query_dir.glob("*.sql")]
 
         for query_name in query_names:
@@ -99,13 +145,13 @@ class Text2SQLFacade:
                 )
             with file_path.open("r") as file:
                 query_data = file.read()
-                sample_queries.append(query_data)
-        return "\n\n".join(sample_queries)
+                sql_by_query_name[query_name] = query_data
+        return sql_by_query_name
 
     def _generate_sql_query(
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str
     ) -> tuple[str, str]:
-        prompt_template_str = Path("prompts/generate_sql_prompt_ver2_jp.txt").read_text()
+        prompt_template_str = self.GENERATER_PROMPT_TEMPLATE.read_text()
 
         prompt_template = PromptTemplate(
             template=prompt_template_str,
@@ -120,53 +166,28 @@ class Text2SQLFacade:
         )
         response = self.model_gateway.generate_response_with_structured_output(prompt, OutputFormat)
 
-        # レスポンスの本文からqueryフィールドとexplanationフィールドを取得
-        ## 不要なバッククォートと「json」記法を削除(レスポンスにmarkdown記法のコードブロックが含まれることがあるため)
-
         return response.query, response.explanation
 
+    def _output_guardrails(
+        self,
+        question: str,
+        dialect: str,
+        tables_metadata: str,
+        related_sample_queries: str,
+        generated_sql_query: str,
+        explanation: str,
+    ) -> tuple[str, str]:
+        """生成されたSQLクエリに対するガードレールを適用して返す"""
+        reviewer_prompt = self.reviewer_prompt_template.format(
+            question=question,
+            dialect=dialect,
+            tables_metadata=tables_metadata,
+            related_sample_queries=related_sample_queries,
+            sql_query=generated_sql_query,
+            explanation=explanation,
+        )
 
-# @app.command()
-# def main(
-#     question: str = typer.Option(..., help="The user's question (natural language)"),
-#     dialect: str = typer.Option("SQLite", help="The SQL dialect to use (default is SQLite)"),
-#     log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
-# ) -> None:
-#     """
-#     自然言語の質問からSQLクエリを生成します。
+        # reviewが生成したクエリをレビューして、問題があれば修正する
+        reviewed_output = self.model_gateway.generate_response_with_structured_output(reviewer_prompt, OutputFormat)
 
-#     Args:
-#         question (str): ユーザーの質問（自然言語）
-#         dialect (str): 使用するSQLの方言（デフォルトはSQLite）
-#     """
-#     # ログレベルを設定
-#     logger.remove()  # デフォルトのログ設定を削除
-#     logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
-
-#     # ユーザクエリに関連するテーブル達をretrieve
-#     retrieved_tables = [
-#         _extract_document_name(doc)
-#         for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="table_embeddings", k=20)
-#     ]
-#     logger.info(f"Retrieved tables: {retrieved_tables}")
-#     table_schemas = load_selected_table_metadata(retrieved_tables)
-
-#     # ユーザクエリに関連するサンプルクエリをretrieve
-#     retrieved_sample_queries = [
-#         _extract_document_name(doc)
-#         for doc in retrieve_relevant_docs(question, VECTOR_DB_PATH, table_name="query_embeddings", k=5)
-#     ]
-#     logger.info(f"Retrieved sample queries: {retrieved_sample_queries}")
-#     related_sample_queries = load_selected_sample_queries(retrieved_sample_queries)
-
-#     sql_query, explanation = generate_sql_query(dialect, question, table_schemas, related_sample_queries)
-
-#     logger.info(f"\nGenerated SQL Query:\n {sql_query}")
-#     if explanation:
-#         logger.info(f"\nExplanation:\n {explanation}")
-
-#     logger.info("SQL query generation process completed")
-
-
-# if __name__ == "__main__":
-#     app()
+        return reviewed_output.query, reviewed_output.explanation

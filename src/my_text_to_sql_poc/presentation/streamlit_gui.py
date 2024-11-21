@@ -16,7 +16,6 @@ user_query = st.text_area(
 sql_dialect = st.selectbox("SQL方言を選択してください:", ["SQLite", "PostgreSQL", "MySQL", "Redshift", "Snowflake"])
 
 # 生成したSQLクエリを表示するテキストエリア
-st.subheader("生成されたSQLクエリ")
 generated_sql = st.empty()  # クエリ出力用のプレースホルダ
 
 # Text2SQLFacadeのインスタンス
@@ -26,11 +25,41 @@ facade = Text2SQLFacade()
 if st.button("SQLクエリを生成"):
     try:
         # SQLクエリ生成
-        sql_query, explanation = facade.process_query(user_query, sql_dialect)
+        ## 利用できそうなテーブルを取得
+        related_metadata_by_table = facade.retrieve_related_tables(user_query, k=20)
+        ## ユーザに経過を表示
+        st.success(
+            f"あなたの質問に活用できそうなテーブルが取得されました: {', '.join(list(related_metadata_by_table.keys())[0:3])}, ..."
+        )
+        with st.expander("取得されたテーブルの詳細を見る"):
+            for table_name, metadata in related_metadata_by_table.items():
+                st.write(f"テーブル名: {table_name}")
+                st.text_area("テーブルメタデータ", metadata, height=200)
+
+        ## 参考になりそうなサンプルクエリを取得
+        related_sql_by_query_name = facade.retrieve_related_sample_queries(user_query, k=10)
+        ## ユーザに経過を表示
+        st.success(
+            f"あなたの質問の参考になりそうなサンプルクエリが取得されました: {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ..."
+        )
+        with st.expander("取得されたサンプルクエリの詳細を見る"):
+            for query_name, sql in related_sql_by_query_name.items():
+                st.write(f"クエリ名: {query_name}")
+                st.code(sql, language="sql", wrap_lines=True)
+
+        ## SQLクエリ生成
+        sql_query, explanation = facade.text2sql(
+            user_query,
+            sql_dialect,
+            tables_metadata="\n\n".join(related_metadata_by_table.values()),
+            related_sample_queries="\n\n".join(related_sql_by_query_name.values()),
+        )
         st.success("SQLクエリが生成されました")
-        st.text_area("生成されたSQLクエリ:", sql_query, height=200)
         if explanation:
             st.text_area("説明:", explanation, height=150)
+        # シンタックスハイライト表示
+        st.code(sql_query, language="sql", line_numbers=True)  # SQLコードをハイライトして表示
+
     except Exception as e:
         st.error(f"SQLクエリの生成に失敗しました: {e}")
 
