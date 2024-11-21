@@ -57,8 +57,10 @@ if st.button("SQLクエリを生成"):
         st.success("SQLクエリが生成されました")
         if explanation:
             st.text_area("説明:", explanation, height=150)
-        # シンタックスハイライト表示
-        st.code(sql_query, language="sql", line_numbers=True)  # SQLコードをハイライトして表示
+
+        # バックスラッシュを二重にエスケープ
+        escaped_sql_query = sql_query.replace("\\", "\\\\")
+        st.code(escaped_sql_query, language="sql", line_numbers=True)  # SQLコードをハイライトして表示
 
     except Exception as e:
         st.error(f"SQLクエリの生成に失敗しました: {e}")
