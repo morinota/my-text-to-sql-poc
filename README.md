@@ -74,12 +74,6 @@ poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？
 
 ### 1.6.1. 実行例
 
-#### 1.6.1.1. text2sqlアプリver1の実行
-
-```bash
-poetry run python -m my_text_to_sql_poc.app.generate_sql_query_ver1 --question "各年の売り上げの推移を知りたい" --dialect "DuckDB" --log-level "DEBUG"
-```
-
 #### テーブルメタデータとサンプルクエリファイルを要約するオフラインバッチの実行
 
 差分更新
@@ -89,7 +83,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
     --table-metadata-dir data/table_metadata \
     --sample-queries-dir data/sample_queries \
     --output-table-summary-dir data/summarized_table \
-    --output-query-summary-dir data/summarized_sample_query \
+    --output-query-summary-dir data/summarized_sample_query
 ```
 
 全更新
