@@ -100,14 +100,15 @@ class Text2SQLFacade:
             tables_metadata=tables_metadata,
             related_sample_queries=related_sample_queries,
         )
-        return self._output_guardrails(
-            question=question,
-            dialect=dialect,
-            tables_metadata=tables_metadata,
-            related_sample_queries=related_sample_queries,
-            generated_sql_query=generated_sql_query,
-            explanation=explanation,
-        )
+        return generated_sql_query, explanation
+        # return self._output_guardrails(
+        #     question=question,
+        #     dialect=dialect,
+        #     tables_metadata=tables_metadata,
+        #     related_sample_queries=related_sample_queries,
+        #     generated_sql_query=generated_sql_query,
+        #     explanation=explanation,
+        # )
 
     def _retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list[Document]:
         """ベクトルストアを読み込み、質問に関連するドキュメントをretrieveする"""
