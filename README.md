@@ -18,63 +18,28 @@ OpenAI APIキーがある場合は、以下のように環境変数として設�
 export OPENAI_API_KEY="your_openai_api_key_here"
 ```
 
-## 1.3. データベースの初期化
+## 1.3. 実行例
 
-このPoCでは、[Sakilaデータセット](https://github.com/jOOQ/sakila)を使用します。`sample.db`にSakilaデータベースをセットアップするには、以下の手順に従います。
+### 1.3.1. 自動でテーブルメタデータを生成するオフラインのバッチジョブを実行
 
-1. Sakila用のSQLファイルが`data/`ディレクトリにあることを確認します。
-
-```bash
-ls data/
-# 出力例:
-# sample.db  sqlite-sakila-schema.sql  sqlite-sakila-insert-data.sql
-```
-
-initialize_sakila.shスクリプトを実行して、sample.dbにデータベースを初期化します。
+全更新
 
 ```bash
-bash
-コードをコピーする
-chmod +x initialize_sakila.sh
-./initialize_sakila.sh
+poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+        --audit-log-path data/redshift_audit_log.csv \
+        --table-metadata-dir data/table_metadata \
+        --full-refresh
 ```
 
-このスクリプトは、既存のsample.dbを削除してから新しいデータベースを作成し、Sakilaのスキーマとデータをインポートします。
-
-3. 初期化が完了したら、SQLiteを使ってデータベースが正しく設定されているか確認できます。
+差分更新
 
 ```bash
-sqlite3 data/sample.db
-.tables  # テーブル一覧の確認
-SELECT * FROM customer LIMIT 5;  # 顧客テーブルのデータ表示
+poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+        --audit-log-path data/redshift_audit_log.csv \
+        --table-metadata-dir data/table_metadata
 ```
 
-## 1.4. プロンプトおよびスキーマファイルの確認
-
-`prompts/generate_sql_prompt.txt` と `schema/tables_schema.json` が存在するか確認します。
-
-- **プロンプトファイル**: `prompts/generate_sql_prompt.txt` は、SQLクエリ生成に使われるプロンプトを含みます。
-- **スキーマファイル**: `schema/tables_schema.json` は、テーブルのスキーマ情報を含んでおり、SQL生成に利用されます。
-
-## 1.5. アプリケーションの実行方法
-
-アプリケーションは以下のコマンドで実行します。`--question`オプションで自然言語の質問を、`--dialect`オプションでSQLの方言を指定します。
-
-```bash
-poetry run python -m my_text_to_sql_poc --question "2023年の売上合計は？" --dialect "SQLite"
-```
-
-## 1.6. ログレベルの指定
-
-デバッグ情報の出力レベルを制御するために、`--log-level`オプションを使用できます。
-
-- `--log-level "INFO"` : 通常の情報のみを表示
-- `--log-level "DEBUG"` : 詳細なデバッグ情報を表示
-- `--log-level "ERROR"` : エラーメッセージのみを表示
-
-### 1.6.1. 実行例
-
-#### テーブルメタデータとサンプルクエリファイルを要約するオフラインバッチの実行
+### 1.3.2. 　テーブルメタデータとサンプルクエリファイルを要約するオフラインバッチの実行
 
 差分更新
 
@@ -97,7 +62,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
     --full-refresh
 ```
 
-#### テーブル要約とクエリ要約を埋め込み表現に変換して、ベクトルストアに保存するオフラインバッチの実行
+### 1.3.3. テーブル要約とクエリ要約を埋め込み表現に変換して、ベクトルストアに保存するオフラインバッチの実行
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
@@ -106,7 +71,7 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
     --vectorstore-file sample_vectorstore.duckdb
 ```
 
-#### Text2SQLアプリケーションの実行(RAGによるcontext constructionを活用するver)
+### 1.3.4. Text2SQLアプリケーションの実行
 
 ```bash
 % poetry run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
@@ -115,27 +80,8 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
     --log-level INFO
 ```
 
-#### GUIアプリケーションの起動
+### 1.3.5. GUIアプリケーションの起動
 
 ```bash
 poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
-```
-
-#### 自動でテーブルメタデータを生成するオフラインのバッチジョブを実行
-
-全更新
-
-```bash
-poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
-        --audit-log-path data/redshift_audit_log.csv \
-        --table-metadata-dir data/table_metadata \
-        --full-refresh
-```
-
-差分更新
-
-```bash
-poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
-        --audit-log-path data/redshift_audit_log.csv \
-        --table-metadata-dir data/table_metadata
 ```
