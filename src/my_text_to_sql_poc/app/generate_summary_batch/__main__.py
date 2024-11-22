@@ -1,4 +1,3 @@
-import json
 import os
 import re
 from pathlib import Path
@@ -7,10 +6,11 @@ import openai
 import typer
 from loguru import logger
 
+from my_text_to_sql_poc.app.generate_summary_batch.summary_model import SQLQuerySummary, TableSummary
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
-from my_text_to_sql_poc.service.related_table_extractor import extract_related_tables  # ModelGatewayをインポート
+from my_text_to_sql_poc.service.related_table_extractor import extract_related_tables
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 # OpenAI APIの設定
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -58,25 +58,17 @@ def summarize_table_schema(
     table_prompt = load_prompt(prompt_path)
     schema_path = schema_dir / f"{table_name}.txt"
 
-    try:
-        with schema_path.open("r") as file:
-            schema_data = file.read()
+    schema_data = schema_path.read_text()
 
-        formatted_prompt = table_prompt.format(
-            table_schema=schema_data,
-            sample_queries="\n".join(sample_queries),
-        )
-        logger.debug(f"Formatted table schema prompt for {table_name}: {formatted_prompt}")
+    formatted_prompt = table_prompt.format(
+        table_schema=schema_data,
+        sample_queries="\n".join(sample_queries),
+    )
+    logger.debug(f"Formatted table schema prompt for {table_name}: {formatted_prompt}")
 
-        response_text = ModelGateway().generate_response(formatted_prompt)
+    response_obj = ModelGateway().generate_response_with_structured_output(formatted_prompt, TableSummary)
 
-        summary = response_text.replace("\\n", "\n")
-
-        return summary
-
-    except Exception as e:
-        logger.error(f"Error summarizing table schema for {table_name}: {e}")
-        raise
+    return response_obj.model_dump_json(indent=2)
 
 
 def summarize_query(query: str, related_tables: set[str], schema_dir: Path, prompt_path: Path) -> str:
@@ -91,11 +83,9 @@ def summarize_query(query: str, related_tables: set[str], schema_dir: Path, prom
     )
     logger.debug(f"Formatted query prompt: {formatted_prompt}")
 
-    response_text = ModelGateway().generate_response(formatted_prompt)
+    response_obj = ModelGateway().generate_response_with_structured_output(formatted_prompt, SQLQuerySummary)
 
-    summary = response_text.replace("\\n", "\n")
-
-    return summary
+    return response_obj.model_dump_json(indent=2)
 
 
 def load_table_schema(table_name: str, schema_dir: Path) -> str | None:

@@ -1,9 +1,7 @@
-import re
 from pathlib import Path
 
 import polars as pl
 import typer
-from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from loguru import logger
 
@@ -16,49 +14,30 @@ app = typer.Typer()
 # プロンプトの設定
 METADATA_PROMPT_PATH = Path("prompts/generate_table_metadata_jp.txt")
 # 対象テーブル一覧
-TARGET_TABLES = [
-    "show_article_events",
-    # "tap_article_events",
-    # "access_latest",
-    # "allocation_settings_detail",
-    # "launch_events",
-    # "movie_events_v2",
-    # "subscription_events",
-    # "user_subscription_histories",
-    # "users_events",
-    # "rds__newspicks.user_billing_users",
-]
 
 
-def _generate_table_metadata(
+def generate_table_metadata(
     table_name: str,
     related_queries: list[str],
-) -> str:
+) -> TableMetadataSchema:
     """対象テーブルのスキーマ情報と、対象テーブルを利用してるサンプルクエリ達を元に、LLMにテーブルメタデータを生成させる"""
-    output_parser = JsonOutputParser(pydantic_object=TableMetadataSchema)
-
     prompt_template_str = METADATA_PROMPT_PATH.read_text()
     prompt_template = PromptTemplate(
-        template=prompt_template_str + "\n\n{format_instructions}",
-        input_variables=["table_name", "sample_queries"],
-        partial_variables={"format_instructions": output_parser.get_format_instructions()},
+        template=prompt_template_str,
+        input_variables=["table_name", "audit_logs"],
     )
 
     formatted_prompt = prompt_template.format(
         table_name=table_name,
-        sample_queries="\n\n".join(related_queries),
+        audit_logs="\n\n".join(related_queries),
     )
 
-    response_text = ModelGateway().generate_response(formatted_prompt)
-
-    summary = response_text.replace("\\n", "\n")
-
-    return summary
+    return ModelGateway().generate_response_with_structured_output(formatted_prompt, TableMetadataSchema)
 
 
 @app.command()
 def main(
-    audit_log_path: Path = typer.Option(..., help="Path to the audit log CSV file"),
+    sample_queries_dir: Path = typer.Option(..., help="Directory containing sample queries"),
     table_metadata_dir: Path = typer.Option(..., help="Output directory for summarized table schemas"),
     full_refresh: bool = typer.Option(False, help="Force full refresh of all summaries"),
     log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
@@ -77,8 +56,8 @@ def main(
         for file in table_metadata_dir.glob("*.txt"):
             file.unlink()
 
-    # audit_logを読み込む
-    audit_log_df = pl.read_csv(audit_log_path)
+    # サンプルクエリ一覧を取得
+    sample_query_texts = [file.read_text() for file in sample_queries_dir.glob("*.sql")]
 
     for table_name in TARGET_TABLES:
         logger.info(f"Processing table: {table_name}")
@@ -90,9 +69,9 @@ def main(
             continue
 
         # audit_logから対象テーブルを使用してるクエリのみを抽出する (一旦setにして重複を除去)
-        related_queries = list(set([query for query in audit_log_df["querytxt"] if table_name in query]))
+        related_queries = list(set([query for query in sample_query_texts if table_name in query]))
 
-        table_metadata = _generate_table_metadata(
+        table_metadata = generate_table_metadata(
             table_name,
             related_queries[0:100],  # input tokenのサイズ制限のため、100件までにしておく
         )
@@ -100,18 +79,30 @@ def main(
         output_path.write_text(table_metadata)
 
 
+def _remove_prefix_query(query: str) -> str:
+    """
+    WITHまたはSELECT以前の文字列を削除
+    """
+    if "WITH" in query.upper():
+        return query[query.upper().index("WITH") :]
+    elif "SELECT" in query.upper():
+        return query[query.upper().index("SELECT") :]
+    return query
+
+
 if __name__ == "__main__":
-    app()
-    # table_name = "show_article_events"
-    # audit_log_df = pl.read_csv("data/redshift_audit_log.csv")
+    # app()
 
-    # # audit_logから対象テーブルを使用してるクエリのみを抽出する
-    # related_queries = [query for query in audit_log_df["querytxt"] if table_name in query]
-    # print(len(related_queries))
-    # print(len(set(related_queries)))
+    table_name = "subscription_events"
+    # sample_queries_dir = Path("data/sample_queries")
+    # sample_query_texts = [file.read_text() for file in sample_queries_dir.glob("*.sql")]
 
-    # table_metadata = _generate_table_metadata(
-    #     table_name,
-    #     related_queries[0:100],
-    # )
-    # print(table_metadata)
+    sample_queries_dir = Path("data/sample_queries")
+    related_queries = [file.read_text() for file in sample_queries_dir.glob("*.sql") if table_name in file.read_text()]
+    table_metadata = generate_table_metadata(
+        table_name,
+        related_queries[0:100],  # input tokenのサイズ制限のため、100件までにしておく
+    )
+    metadata_json = table_metadata.model_dump_json(indent=2)
+    print(metadata_json)
+    Path(f"temp_table_metadata_{table_name}.json").write_text(metadata_json)

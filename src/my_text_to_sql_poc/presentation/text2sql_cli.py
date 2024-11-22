@@ -18,7 +18,7 @@ def main(
     logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
 
     facade = Text2SQLFacade()
-    sql_query, explanation = facade.process_query(question, dialect)
+    sql_query, explanation = facade.all_process(question, dialect)
 
     logger.info(f"\nGenerated SQL Query:\n {sql_query}")
     if explanation:
