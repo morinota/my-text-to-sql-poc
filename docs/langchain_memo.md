@@ -172,4 +172,112 @@ print(multiply.return_direct)
 
 #### StructuredToolデータクラスを使用する方法
 
-hogehoge
+- この方法は、前の2つ(tools decorator, BaseTool)の中間的な方法。
+  - BaseToolを継承する方法よりも簡単で、tool decoratorを使う方法よりも柔軟。
+
+```python
+def search_function(query: str)->str:
+    return "LangChain"
+
+search = StructuredTool.from_function(
+    func=search_function,
+    name="Search",
+    description="useful for when you need to answer questions about current events",
+    # coroutine= ... <- you can specify an async method if desired as well
+)
+
+print(search.name)
+print(search.description)
+print(search.args)
+```
+
+- custom args_schemaを定義して、入力に関する詳細情報を提供することもできる。
+
+```python
+class CalculatorInput(BaseModel):
+    a: int = Field(description="first number")
+    b: int = Field(description="second number")
+
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers."""
+    return a * b
+
+calculator = StructuredTool.from_function(
+    func=multiply,
+    name="Calculator",
+    description="multiply numbers",
+    args_schema=CalculatorInput,
+    return_direct=True,
+    # coroutine= ... <- you can specify an async method if desired as well
+)
+
+print(calculator.name)
+print(calculator.description)
+print(calculator.args)
+```
+
+### toolのエラーハンドリング
+
+- toolがエラーに遭遇し、例外がキャッチされない場合、agentは実行を停止する。
+- Agentに実行を継続させたい場合は、`ToolException`をraiseさせ、`handle_tool_error`を適切に設定できる。
+  - `ToolException`がthrowされると、Agentは作業を停止せず、toolの`handle_tool_error`変数にしたがって例外を処理し、処理結果がobservationとしてagentに返される。
+    - (`ToolException`を発生させるだけでは意味がなく、`handle_tool_error`変数を適切に設定しないと、エラーが発生した際にAgentが停止してしまう...!!:thinking:)
+- `handle_tool_error`変数について
+  - bool型やstr型、関数として設定ができる。
+    - 関数として設定されている場合は、その関数は`ToolException`を引数として受け取り、str型を返す必要がある。
+  - デフォルト値は`False`
+
+- もし`handle_tool_error`を設定しない場合はどうなる?? (i.e. `handle_tool_error=False`)
+
+```python
+from langchain_core.tools import ToolException
+
+def search_tool1(s: str):
+    raise ToolException("The search tool1 is not available.")
+
+search = StructuredTool.from_function(
+    func=search_tool1,
+    name="Search_tool1",
+    description="A bad tool",
+)
+search.run("test")
+
+>>> ToolException   Traceback (most recent call last)
+>>> ToolException: The search tool1 is not available.
+...
+```
+
+- 次に、`handle_tool_error`をTrueに設定してみる
+
+```python
+search = StructuredTool.from_function(
+    func=search_tool1,
+    name="Search_tool1",
+    description="A bad tool",
+    handle_tool_error=True,
+)
+search.run("test")
+
+>>> 'The search tool1 is not available.'  # 処理が停止せず、エラーが処理されていることがわかる
+```
+
+- また、`handle_tool_error`に、tool errorを処理するcustom関数を定義する場合
+  
+```python
+def _handle_error(error: ToolException) -> str:
+    return (
+        "The following errors occurred during tool execution:"
+        + error.args[0]
+        + "Please try another tool."
+    )
+
+search = StructuredTool.from_function(
+    func=search_tool1,
+    name="Search_tool1",
+    description="A bad tool",
+    handle_tool_error=_handle_error,
+)
+search.run("test")
+
+>>> 'The following errors occurred during tool execution:The search tool1 is not available.Please try another tool.' # 処理が停止せず、エラーが処理されていることがわかる
+```
