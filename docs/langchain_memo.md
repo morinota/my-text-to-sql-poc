@@ -41,15 +41,17 @@
     - オプショナルだが推奨。Agentがtoolの使用を判断するために使用される。
   - args_schema (Pydantic BaseModel):
     - オプショナルだが推奨。追加情報(ex. few-shot example)やパラメータの検証のために役立つ。
+  - return_direct(bool):
+    - オプショナル。Agentにのみ関連する。Trueの場合、与えられたツールを起動したあと、Agentは停止し、結果をユーザに直接返す。
+
+- tips: ツールに適切に選ばれた名前、説明、およびJSONスキーマがあると、モデルのパフォーマンスが向上する
 
 ### toolの定義方法
 
-- まず一般的に必要なものをインポートする。
-
-```python
-from langchain.pydantic_v1 import BaseModel, Field
-from langchain.tools import BaseTool, StructuredTool, tool
-```
+- 関数にtool decoratorを適用する方法
+- BaseToolクラスを継承する方法
+- StructuredToolデータクラスを使用する方法
+- Runnablesからtoolを作成する方法
 
 #### tool decoratorを使う方法
 
@@ -68,6 +70,9 @@ def search(query: str) -> str:
 print(search.name)
 print(search.description)
 print(search.args)
+# search
+# Look up things online.
+# {'query': {'title': 'Query', 'type': 'string'}}
 ```
 
 - 複数の入力値を受け取る関数の例
@@ -81,6 +86,9 @@ def multiply(a: int, b: int) -> int:
 print(multiply.name)
 print(multiply.description)
 print(multiply.args)
+# multiply
+# Multiply two numbers.
+# {'a': {'title': 'A', 'type': 'integer'}, 'b': {'title': 'B', 'type': 'integer'}}
 ```
 
 - tool nameやargs_schema引数をカスタマイズする場合
@@ -93,6 +101,33 @@ class SearchInput(BaseModel):
 def search(query: str) -> str:
     """Look up things online."""
     return "LangChain"
+```
+
+- @toolデコレータは`parse_docstring`オプションでgoogleスタイルのdocstringを解析し、docstringのコンポーネント(引数の説明など)をtool schemaの関連部分に紐づけることができる。
+  - デフォルトでは、@tool(parse_docstring=True)はドキュメンテーション文字列が正しく解析されない場合、ValueErrorを発生させてしまう。
+  - 詳細はAPIリファレンスを参照。
+
+```python
+@tool(parse_docstring=True)
+def foo(bar: str, baz: int) -> str:
+    """The foo.
+    Args:
+        bar: The bar.
+        baz: The baz.
+    """
+    return bar
+
+foo.args_schema.schema()
+# {
+#     'description': 'The foo.',
+#     'properties': {
+#         'bar': {'description': 'The bar.', 'title': 'Bar', 'type': 'string'},
+#         'baz': {'description': 'The baz.', 'title': 'Baz', 'type': 'integer'}
+#     },
+#     'required': ['bar', 'baz'],
+#     'title': 'fooSchema',
+#     'type': 'object'
+# }
 ```
 
 #### BaseToolクラスを継承する方法
@@ -211,9 +246,38 @@ calculator = StructuredTool.from_function(
     # coroutine= ... <- you can specify an async method if desired as well
 )
 
-print(calculator.name)
-print(calculator.description)
-print(calculator.args)
+print(calculator.name) 
+# >>> Calculator
+print(calculator.description) 
+# >>> multiply numbers
+print(calculator.args) 
+# >>> {'a': {'description': 'first number', 'title': 'A', 'type': 'integer'}, 'b': {'description': 'second number', 'title': 'B', 'type': 'integer'}}
+
+```
+
+#### Runnablesからtoolを作成する方法
+
+- 文字列または辞書入力を受け入れる**LangChain Runnables** (=chain的なやつ...??:thinking:)は、as_toolメソッドを使用してツールに変換でき、名前、説明、および引数の追加スキーマ情報を指定できる。
+
+```python
+from langchain_core.language_models import GenericFakeChatModel
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_messages(
+    [("human", "Hello. Please respond in the style of {answer_style}.")]
+)
+
+# Placeholder LLM
+llm = GenericFakeChatModel(messages=iter(["hello matey"]))
+chain = prompt | llm | StrOutputParser()
+
+as_tool = chain.as_tool(
+    name="Style responder", description="Description of when to use tool."
+)
+
+as_tool.args
+{'answer_style': {'title': 'Answer Style', 'type': 'string'}}
 ```
 
 ### toolのエラーハンドリング
@@ -281,3 +345,57 @@ search.run("test")
 
 >>> 'The following errors occurred during tool execution:The search tool1 is not available.Please try another tool.' # 処理が停止せず、エラーが処理されていることがわかる
 ```
+
+### 非同期(async)なtoolの作成方法
+
+- 前提として、LangChainツールはRunnableインターフェースの実装である。そして、**全てのRunnableはinvokeおよびainvokeメソッド(およびbatch、abatch、astreamなどの他のメソッド)を公開**している。
+- なのでtoolも同期処理の実装のみでも、ainvokeメソッドを使用できるが、注意すべき重要なことがある。
+  - LangChainはデフォルトで、関数の計算にコストがかかると仮定して非同期実装を提供しており、そのため、実行を別のスレッドに委任する
+  - なので、同期ツールではなく非同期ツールを作成する方が効率的。
+    - **同期および非同期の両方の実装が必要な場合は、StructuredTool.from_functionを使用するか、BaseToolからサブクラス化する必要がある**。
+      - ex. BaseToolの場合は、`def _run()`メソッドと`async def _arun()`メソッドの両方を実装する。
+      - ex. StructuredToolの場合は、`func`引数に同期関数、`coroutine`引数に非同期関数を指定する。
+
+### ツール実行の成果物を返す(結構使いそう!)
+
+- 時には、**ツールの実行の成果物があり、それをチェーンやエージェントの下流コンポーネントではアクセス可能にしたいが、モデル自体には公開したくない場合**がある。
+  - (うんうん、ありそう...!A/Bテストmetricsの実数値とか...!:thinking:)
+  - ex. ツールがDocumentsのようなカスタムオブジェクトを返す場合、モデルに生の出力を渡さずに、この出力に関するビューやメタデータをモデルに渡したかったりする。
+
+- ToolおよびToolMessageインターフェースは、**ツール出力のモデル向けの部分（これはToolMessage.contentです）と、モデル外で使用するための部分（ToolMessage.artifact）を区別する**ことを可能にする
+  - toolが message contentと他のartifactsを区別可能にするには、toolを定義する際に`response_format="content_and_artifact"`を指定し、`(content, artifact)`のタプルを返すようにする必要がある。
+    - 詳細はtoolのAPI referenceを参照
+- 例:
+
+```python
+import random
+from typing import List, Tuple
+from langchain_core.tools import tool
+
+@tool(response_format="content_and_artifact")
+def generate_random_ints(min: int, max: int, size: int) -> Tuple[str, List[int]]:
+    """Generate size random ints in the range [min, max]."""
+    array = [random.randint(min, max) for _ in range(size)]
+    content = f"Successfully generated array of {size} random ints in [{min}, {max}]."
+    return content, array
+
+# ツールを直接呼び出すと、出力のコンテンツ部分のみが返される
+generate_random_ints.invoke({"min": 0, "max": 9, "size": 10})
+
+>>> 'Successfully generated array of 10 random ints in [0, 9].'
+
+# もしtoolをToolCall（tool-callingモデルによって生成されるもの）で呼び出すと、toolが生成したcontentとartifactの両方を含むToolMessageが返される
+generate_random_ints.invoke(
+    {
+        "name": "generate_random_ints",
+        "args": {"min": 0, "max": 9, "size": 10},
+        "id": "123",  # required
+        "type": "tool_call",  # required
+    }
+)
+
+>>> ToolMessage(content='Successfully generated array of 10 random ints in [0, 9].', name='generate_random_ints', tool_call_id='123', artifact=[4, 8, 2, 4, 1, 0, 9, 5, 8, 1])
+```
+
+-
+-
