@@ -22,19 +22,19 @@ class State(TypedDict):
 
 
 graph_builder = StateGraph(State)
+
+
 tool = TavilySearchResults(max_results=2)
-tools = [tool]
-llm = ChatOpenAI(model="gpt-4o-mini")
-llm_with_tools = llm.bind_tools(tools)
+llm_with_tools = ChatOpenAI(model="gpt-4o-mini").bind_tools([tool])
 
 
 def chatbot(state: State) -> State:
     """chatbotノードは、メッセージを受け取り、OpenAIの言語モデルを使用して応答を生成します。"""
-    return {"messages": [llm.invoke(state["messages"])]}
+    return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
 
 graph_builder.add_node("chatbot", chatbot)  # グラフにノードを追加
-tool_node = ToolNode(tools=tools)  # ツールノードをインスタンス化
+tool_node = ToolNode(tools=[tool])  # ツールノードをインスタンス化
 graph_builder.add_node("tools", tool_node)  # グラフにノードを追加
 
 # 条件付きエッジを、グラフに追加 (意味: チャットボットノードが実行されるたびに、ツールを呼び出す場合は'tools'に行き、直接応答する場合はループを終了する)
@@ -72,31 +72,28 @@ def route_tools(state: State) -> str | list[str]:
 
 
 # 最後に、グラフを実行可能にする (CompiledGraphが作成される)
-graph = graph_builder.compile(checkpointer=memory)
+graph = graph_builder.compile(
+    checkpointer=memory,  # stateを保存するためのcheckpointerを指定
+    interrupt_before=["tools"],  # toolsノードの通過前にグラフを中断する
+)
 print(graph.get_graph().draw_mermaid())
 
-
-config = {"configurable": {"thread_id": "1"}}  # 会話のキーとして使用するスレッドIDを指定
-
-user_input = "Hi there! My name is Will."
-# The config is the **second positional argument** to stream() or invoke()
+user_input = "I'm learning LangGraph. Could you do some research on it for me?"
+config = {"configurable": {"thread_id": "1"}}
 events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode="values")
+
 for event in events:
-    event["messages"][-1].pretty_print()
-
-
-user_input = "Remember my name?"
-events = graph.stream({"messages": [("user", user_input)]}, {"configurable": {"thread_id": "2"}}, stream_mode="values")
-for event in events:
-    event["messages"][-1].pretty_print()
-
+    if "messages" in event:
+        event["messages"][-1].pretty_print()
 
 snapshot = graph.get_state(config)
-print(snapshot)
+print(f"{snapshot.next=}")
 
+existing_message = snapshot.values["messages"][-1]
+print(existing_message.tool_calls)
 
-def stream_graph_updates(user_input: str) -> None:
-    """ユーザー入力を受け取り、グラフを実行して応答を生成します。"""
-    for event in graph.stream({"messages": [("user", user_input)]}):
-        for value in event.values():
-            print("Assistant:", value["messages"][-1].content)
+# Noneを指定して呼び出すと、現在の状態に何も追加されず、中断されていなかったかのように再開される
+events = graph.stream(None, config, stream_mode="values")
+for event in events:
+    if "messages" in event:
+        event["messages"][-1].pretty_print()

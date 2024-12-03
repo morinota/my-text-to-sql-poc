@@ -775,16 +775,14 @@ graph = graph_builder.compile(checkpointer=memory)
 ## Part 4: Human-in-the-loop
 
 Agents can be unreliable and may need human input to successfully accomplish tasks.
-エージェントは信頼できない場合があり、タスクを成功裏に達成するために人間の入力が必要な場合があります。
-
+**エージェントは信頼できない場合があり、タスクを成功裏に達成するために人間の入力が必要な場合がある**。
 Similarly, for some actions, you may want to require human approval before running to ensure that everything is running as intended.
-同様に、いくつかのアクションについては、すべてが意図した通りに実行されていることを確認するために、実行前に人間の承認を必要とする場合があります。
-
+同様に、**いくつかのアクションについては、すべてが意図した通りに実行されていることを確認するために、実行前に人間の承認を必要とする場合がある**。
 LangGraph supports human-in-the-loop workflows in a number of ways.
 LangGraphは、さまざまな方法で人間が介在するワークフローをサポートしています。
 
 In this section, we will use LangGraph's interrupt_before functionality to always break the tool node.
-このセクションでは、LangGraphのinterrupt_before機能を使用して、常にツールノードを中断します。
+このセクションでは、LangGraphの`interrupt_before`機能を使用して、常にツールノードを中断します。
 
 First, start from our existing code.
 まず、既存のコードから始めます。
@@ -792,8 +790,7 @@ First, start from our existing code.
 The following is copied from Part 3.
 以下は、パート3からコピーしたものです。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -827,20 +824,17 @@ graph_builder.add_edge(START, "chatbot")
 ```
 
 Now, compile the graph, specifying to interrupt_before the tools node.
-次に、グラフをコンパイルし、ツールノードの前で中断するように指定します。
+次に、グラフをコンパイルし、**ツールノードの前で中断するように**指定します。
 
-```
-
+```python
 graph = graph_builder.compile(
     checkpointer=memory,  # This is new!
     interrupt_before=["tools"],  # Note: can also interrupt **after** tools, if desired.
     # interrupt_after=["tools"]
 )
-
 ```
 
-```
-
+```python
 user_input = "I'm learning LangGraph. Could you do some research on it for me?"
 config = {"configurable": {"thread_id": "1"}}  # The config is the **second positional argument** to stream() or invoke()!
 events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode="values")
@@ -848,7 +842,6 @@ events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode=
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
 ```
@@ -869,17 +862,13 @@ Args: query: LangGraph framework for building language model applications
 
 ```
 
-```
-
+```python
 snapshot = graph.get_state(config)
 snapshot.next
-
 ```
 
 ```
-
 ('tools',)
-
 ```
 
 Notice that unlike last time, the "next" node is set to 'tools'.
@@ -889,14 +878,11 @@ We've interrupted here! Let's check the tool invocation.
 ここで中断しました！ツールの呼び出しを確認しましょう。
 
 ```
-
 existing_message = snapshot.values["messages"][-1]
 existing_message.tool_calls
-
 ```
 
 ```
-
 [{'name': 'tavily_search_results_json', 'args': {'query': 'LangGraph framework for building language model applications'}, 'id': 'toolu_01R4ZFcb5hohpiVZwr88Bxhc', 'type': 'tool_call'}]
 
 ```
@@ -908,7 +894,7 @@ Nothing to filter here.
 ここでフィルタリングする必要はありません。
 
 The simplest thing the human can do is just let the graph continue executing.
-人間ができる最も簡単なことは、グラフの実行を続けさせることです。
+**人間ができる最も簡単なことは、グラフの実行を続けさせること**です。
 
 Let's do that below.
 以下でそれを行いましょう。
@@ -917,7 +903,7 @@ Next, continue the graph!
 次に、グラフを続行します！
 
 Passing in None will just let the graph continue where it left off, without adding anything new to the state.
-Noneを渡すことで、グラフは新しい状態を追加することなく、元の位置から続行します。
+**Noneを渡すことで、グラフは新しい状態を追加することなく、元の位置から続行します**。
 
 ```
 
@@ -948,51 +934,19 @@ Args: query: LangGraph framework for building language model applications
 ```
 
 ```
-
 =================================[1m Tool Message [0m=================================
 Name: tavily_search_results_json
 [{"url": "https://towardsdatascience.com/from-basics-to-advanced-exploring-langgraph-e8c1cf4db787", "content": "LangChain is one of the leading frameworks for building applications powered by Large Language Models. With the LangChain Expression Language (LCEL), defining and executing step-by-step action sequences — also known as chains — becomes much simpler. In more technical terms, LangChain allows us to create DAGs (directed acyclic graphs). As LLM applications, particularly LLM agents, have ..."}, {"url": "https://github.com/langchain-ai/langgraph", "content": "Overview. LangGraph is a library for building stateful, multi-actor applications with LLMs, used to create agent and multi-agent workflows. Compared to other LLM frameworks, it offers these core benefits: cycles, controllability, and persistence. LangGraph allows you to define flows that involve cycles, essential for most agentic architectures ..."}]
-
-```
-
-```
-
-==================================[1m Ai Message [0m==================================
-Thank you for your patience. I've found some valuable information about LangGraph for you. Let me summarize the key points:
-
-1. LangGraph is a library for building stateful, multi-actor applications with Large Language Models (LLMs).
-2. It is particularly useful for creating agent and multi-agent workflows.
-3. LangGraph is built on top of LangChain, which is one of the leading frameworks for building LLM-powered applications.
-4. Key benefits of LangGraph compared to other LLM frameworks include:
-   a) Cycles: It allows you to define flows that involve cycles, which is essential for most agent architectures.
-   b) Controllability: Offers more control over the application flow.
-   c) Persistence: Provides ways to maintain state across interactions.
-5. LangGraph works well with the LangChain Expression Language (LCEL), which simplifies the process of defining and executing step-by-step action sequences (chains).
-6. In technical terms, LangGraph enables the creation of Directed Acyclic Graphs (DAGs) for LLM applications.
-7. It's particularly useful for building more complex LLM agents and multi-agent systems.
-
-LangGraph seems to be an advanced tool that builds upon LangChain to provide more sophisticated capabilities for creating stateful and multi-actor LLM applications.
-LangGraphは、状態を持つマルチアクターLLMアプリケーションを作成するためのより洗練された機能を提供するためにLangChainの上に構築された高度なツールのようです。
-
-It's especially valuable if you're looking to create complex agent systems or applications that require maintaining state across interactions.
-これは、複雑なエージェントシステムや、相互作用を通じて状態を維持する必要があるアプリケーションを作成しようとしている場合に特に価値があります。
-
-Is there any specific aspect of LangGraph you'd like to know more about?
-LangGraphの特定の側面についてもっと知りたいことはありますか？
-
-I'd be happy to dive deeper into any particular area of interest.
-特定の興味のある分野についてさらに掘り下げることができれば幸いです。
-
 ```
 
 Congrats! You've used an interrupt to add human-in-the-loop execution to your chatbot, allowing for human oversight and intervention when needed.
-おめでとうございます！あなたは中断を使用して、チャットボットに人間が介在する実行を追加し、必要に応じて人間の監視と介入を可能にしました。
+おめでとうございます！あなたは**interruptを使用して、チャットボットに人間が介在する実行を追加し、必要に応じて人間の監視と介入を可能にした**。
 
 This opens up the potential UIs you can create with your AI systems.
 これにより、AIシステムで作成できる潜在的なUIが広がります。
 
 Since we have already added a checkpointer, the graph can be paused indefinitely and resumed at any time as if nothing had happened.
-すでにチェックポインターを追加しているため、グラフは無期限に一時停止でき、何も起こらなかったかのようにいつでも再開できます。
+**すでにチェックポインターを追加しているため、グラフは無期限に一時停止でき、何も起こらなかったかのようにいつでも再開できます**。
 
 Next, we'll explore how to further customize the bot's behavior using custom state updates.
 次に、カスタム状態更新を使用してボットの動作をさらにカスタマイズする方法を探ります。
@@ -1043,43 +997,7 @@ graph = graph_builder.compile(
 
 ```
 
-```
-
-from typing import Annotated
-from langchain_anthropic import ChatAnthropic
-from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_core.messages import BaseMessage
-from typing_extensions import TypedDict
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
-
-class State(TypedDict):
-    messages: Annotated[list, add_messages]
-
-graph_builder = StateGraph(State)
-tool = TavilySearchResults(max_results=2)
-tools = [tool]
-llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
-llm_with_tools = llm.bind_tools(tools)
-
-def chatbot(state: State):
-    return {"messages": [llm_with_tools.invoke(state["messages"])]}
-
-graph_builder.add_node("chatbot", chatbot)
-tool_node = ToolNode(tools=[tool])
-graph_builder.add_node("tools", tool_node)
-graph_builder.add_conditional_edges("chatbot", tools_condition,)
-graph_builder.add_edge("tools", "chatbot")
-graph_builder.set_entry_point("chatbot")
-
-memory = MemorySaver()
-graph = graph_builder.compile(
-    checkpointer=memory,  # This is new!
-    interrupt_before=["tools"],  # Note: can also interrupt **after** actions, if desired.
-    # interrupt_after=["tools"]
-)
+<!-- ここまで読んだ! -->
 
 ## Part 5: Manually Updating the State¶
 
