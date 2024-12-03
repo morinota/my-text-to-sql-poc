@@ -532,13 +532,13 @@ Our chatbot can now use tools to answer user questions, but it doesn't remember 
 This limits its ability to have coherent, multi-turn conversations.
 これにより、一貫したマルチターンの会話を行う能力が制限されます。
 LangGraph solves this problem through persistent checkpointing.
-LangGraphは、永続的なチェックポイントを通じてこの問題を解決します。
+LangGraphは、**永続的なチェックポイント**を通じてこの問題を解決します。
 If you provide a checkpointer when compiling the graph and a thread_id when calling your graph, LangGraph automatically saves the state after each step.
-グラフをコンパイルする際にチェックポインタを提供し、グラフを呼び出す際にthread_idを指定すると、LangGraphは各ステップの後に自動的に状態を保存します。
+**グラフをコンパイルする際にチェックポインタを提供し、グラフを呼び出す際にthread_idを指定する**と、LangGraphは各ステップの後に自動的に状態を保存します。
 When you invoke the graph again using the same thread_id, the graph loads its saved state, allowing the chatbot to pick up where it left off.
-同じthread_idを使用してグラフを再度呼び出すと、グラフは保存された状態を読み込み、チャットボットは前回の続きから再開できます。
+同じthread_idを使用してグラフを再度呼び出すと、**グラフは保存された状態を読み込み、チャットボットは前回の続きから再開できる**。
 We will see later that checkpointing is much more powerful than simple chat memory - it lets you save and resume complex state at any time for error recovery, human-in-the-loop workflows, time travel interactions, and more.
-後で見ていくと、チェックポイントは単純なチャットメモリよりもはるかに強力であり、エラー回復や人間の介入が必要なワークフロー、タイムトラベルインタラクションなどのために、いつでも複雑な状態を保存して再開できることがわかります。
+後で見ていくと、**チェックポイントは単純なチャットメモリよりもはるかに強力であり、エラー回復や人間の介入が必要なワークフロー、タイムトラベルインタラクションなどのために、いつでも複雑な状態を保存して再開できる**ことがわかります。
 But before we get too ahead of ourselves, let's add checkpointing to enable multi-turn conversations.
 しかし、先に進む前に、マルチターンの会話を可能にするためにチェックポイントを追加しましょう。
 
@@ -546,28 +546,25 @@ To get started, create a MemorySaver checkpointer.
 まず、MemorySaverチェックポインタを作成します。
 
 ```
-
 from langgraph.checkpoint.memory import MemorySaver
 memory = MemorySaver()
-
 ```
 
 Notice we're using an in-memory checkpointer.
-私たちはインメモリチェックポインタを使用していることに注意してください。
+**私たちはインメモリチェックポインタを使用している**ことに注意してください。
 This is convenient for our tutorial (it saves it all in-memory).
-これは私たちのチュートリアルにとって便利です（すべてをメモリ内に保存します）。
+これは私たちのチュートリアルにとって便利です（**すべてをメモリ内に保存**します）。
 In a production application, you would likely change this to use SqliteSaver or PostgresSaver and connect to your own DB.
 本番アプリケーションでは、これをSqliteSaverまたはPostgresSaverを使用して自分のデータベースに接続するように変更することが考えられます。
 
 Next define the graph.
 次に、グラフを定義します。
 Now that you've already built your own BasicToolNode, we'll replace it with LangGraph's prebuilt ToolNode and tools_condition, since these do some nice things like parallel API execution.
-すでに独自のBasicToolNodeを構築しているので、これをLangGraphの事前構築されたToolNodeとtools_conditionに置き換えます。これにより、並列API実行などの便利な機能が提供されます。
+すでに**独自のBasicToolNodeを構築しているので、これをLangGraphの事前構築されたToolNodeとtools_conditionに置き換えます。これにより、並列API実行などの便利な機能が提供**されます。(あ、やっぱりprebuildの関数の方がいいんだな:thinking_face:)
 Apart from that, the following is all copied from Part 2.
 それ以外は、以下の内容はすべてPart 2からコピーしたものです。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -598,32 +595,27 @@ graph_builder.add_conditional_edges("chatbot", tools_condition,)
 
 graph_builder.add_edge("tools", "chatbot")
 graph_builder.add_edge(START, "chatbot")
-
 ```
 
 Finally, compile the graph with the provided checkpointer.
 最後に、提供されたチェックポインタを使用してグラフをコンパイルします。
 
 ```
-
 graph = graph_builder.compile(checkpointer=memory)
-
 ```
 
 Notice the connectivity of the graph hasn't changed since Part 2.
-グラフの接続性はPart 2から変わっていないことに注意してください。
+**グラフの接続性はPart 2から変わっていないことに注意**してください。
 All we are doing is checkpointing the State as the graph works through each node.
-私たちが行っているのは、グラフが各ノードを通過する際にStateをチェックポイントすることだけです。
+私たちが行っているのは、**グラフが各ノードを通過する際にStateをチェックポイントすることだけ**です。(各ノードの処理がよばれるたびに、その時点のStateをそれぞれ保存しておくってことっぽい...!! 再利用やエラー時の再開に便利ってこと??:thinking_face:)
 
-```
-
+```python
 from IPython.display import Image, display
 try:
     display(Image(graph.get_graph().draw_mermaid_png()))
 except Exception:
     # This requires some extra dependencies and is optional
     pass
-
 ```
 
 Now you can interact with your bot!
@@ -640,8 +632,7 @@ config = {"configurable": {"thread_id": "1"}}
 Next, call your chat bot.
 次に、チャットボットを呼び出します。
 
-```
-
+```python
 user_input = "Hi there! My name is Will."
 
 # The config is the **second positional argument** to stream() or invoke()
@@ -649,20 +640,18 @@ user_input = "Hi there! My name is Will."
 events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode="values")
 for event in events:
     event["messages"][-1].pretty_print()
-
 ```
 
-```
-
+```shell
 ================================[1m Human Message [0m=================================
 Hi there! My name is Will.
 ==================================[1m Ai Message [0m==================================
 Hello Will! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to know or discuss?
-
 ```
 
 Let's ask a followup: see if it remembers your name.
 次に、フォローアップを尋ねてみましょう：あなたの名前を覚えているかどうかを確認します。
+(続けて上のコードの下に書く! メモリ上にcheckpointingしてるので、一回アプリケーションを落とすとメモリが解放されてしまう)
 
 ```
 
@@ -673,7 +662,6 @@ user_input = "Remember my name?"
 events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode="values")
 for event in events:
     event["messages"][-1].pretty_print()
-
 ```
 
 ```
@@ -687,81 +675,70 @@ Of course, I remember your name, Will. I always try to pay attention to importan
 
 Don't believe me? Try this using a different config.
 信じられないですか？異なる設定を使用してこれを試してみてください。
+(指定するthread_idを変えると、元のthread_idのメモリは読み込まれないので、名前を覚えていない状態になる...!:thinking_face:)
 
-```
-
+```python
 # The only difference is we change the `thread_id` here to "2" instead of "1"
 
 events = graph.stream({"messages": [("user", user_input)]}, {"configurable": {"thread_id": "2"}}, stream_mode="values",)
 for event in events:
     event["messages"][-1].pretty_print()
-
 ```
 
 ```
-
 ================================[1m Human Message [0m=================================
 Remember my name?
 ==================================[1m Ai Message [0m==================================
 I apologize, but I don't have any previous context or memory of your name. As an AI assistant, I don't retain information from past conversations. Each interaction starts fresh. Could you please tell me your name so I can address you properly in this conversation?
-
 ```
 
 By now, we have made a few checkpoints across two different threads.
 これまでに、2つの異なるスレッドにわたっていくつかのチェックポイントを作成しました。
 But what goes into a checkpoint?
-しかし、チェックポイントには何が含まれるのでしょうか？
+しかし、**チェックポイントには何が含まれるのでしょうか？**
 To inspect a graph's state for a given config at any time, call get_state(config).
-特定の設定に対するグラフの状態をいつでも確認するには、get_state(config)を呼び出します。
+**特定の設定に対するグラフの状態をいつでも確認するには、get_state(config)を呼び出し**ます。
 
-```
-
+```python
 snapshot = graph.get_state(config)
 snapshot
-
 ```
 
 ```
-
 StateSnapshot(values={'messages': [HumanMessage(content='Hi there! My name is Will.', additional_kwargs={}, response_metadata={}, id='8c1ca919-c553-4ebf-95d4-b59a2d61e078'), AIMessage(content="Hello Will! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to know or discuss?", additional_kwargs={}, response_metadata={'id': 'msg_01WTQebPhNwmMrmmWojJ9KXJ', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 405, 'output_tokens': 32}}, id='run-58587b77-8c82-41e6-8a90-d62c444a261d-0', usage_metadata={'input_tokens': 405, 'output_tokens': 32, 'total_tokens': 437}), HumanMessage(content='Remember my name?', additional_kwargs={}, response_metadata={}, id='daba7df6-ad75-4d6b-8057-745881cea1ca'), AIMessage(content="Of course, I remember your name, Will. I always try to pay attention to important details that users share with me. Is there anything else you'd like to talk about or any questions you have? I'm here to help with a wide range of topics or tasks.", additional_kwargs={}, response_metadata={'id': 'msg_01E41KitY74HpENRgXx94vag', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 444, 'output_tokens': 58}}, id='run-ffeaae5c-4d2d-4ddb-bd59-5d5cbf2a5af8-0', usage_metadata={'input_tokens': 444, 'output_tokens': 58, 'total_tokens': 502})]}, next=(), config={'configurable': {'thread_id': '1', 'checkpoint_ns': '', 'checkpoint_id': '1ef7d06e-93e0-6acc-8004-f2ac846575d2'}}, metadata={'source': 'loop', 'writes': {'chatbot': {'messages': [AIMessage(content="Of course, I remember your name, Will. I always try to pay attention to important details that users share with me. Is there anything else you'd like to talk about or any questions you have? I'm here to help with a wide range of topics or tasks.", additional_kwargs={}, response_metadata={'id': 'msg_01E41KitY74HpENRgXx94vag', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 444, 'output_tokens': 58}}, id='run-ffeaae5c-4d2d-4ddb-bd59-5d5cbf2a5af8-0', usage_metadata={'input_tokens': 444, 'output_tokens': 58, 'total_tokens': 502})]}}, 'step': 4, 'parents': {}}, created_at='2024-09-27T19:30:10.820758+00:00', parent_config={'configurable': {'thread_id': '1', 'checkpoint_ns': '', 'checkpoint_id': '1ef7d06e-859f-6206-8003-e1bd3c264b8f'}}, tasks=())
 
 ```
 
-```
-
+```python
 snapshot.next
-
 # (since the graph ended this turn, `next` is empty. If you fetch a state from within a graph invocation, next tells which node will execute next)
-
+# (このターンでグラフが終了したため、`next`は空です。グラフの実行中に状態のsnapshotを取得すると、次に実行されるノードがわかります)
 ```
 
 ```
-
 ()
-
 ```
 
 The snapshot above contains the current state values, corresponding config, and the next node to process.
-上記のスナップショットには、現在の状態値、対応する設定、および次に処理するノードが含まれています。
+上記の**スナップショットには、現在のstate values、対応する設定、および次に処理するノードが含まれ**ている。
 In our case, the graph has reached an END state, so next is empty.
 私たちのケースでは、グラフはEND状態に達しているため、nextは空です。
 
 Congratulations!
 おめでとうございます！
 Your chatbot can now maintain conversation state across sessions thanks to LangGraph's checkpointing system.
-あなたのチャットボットは、LangGraphのチェックポイントシステムのおかげで、セッションをまたいで会話の状態を維持できるようになりました。
+あなたのチャットボットは、LangGraphのチェックポイントシステムのおかげで、**セッションをまたいで会話の状態を維持できるようになりました**。
 This opens up exciting possibilities for more natural, contextual interactions.
 これにより、より自然で文脈に沿ったインタラクションのためのエキサイティングな可能性が開かれます。
 LangGraph's checkpointing even handles arbitrarily complex graph states, which is much more expressive and powerful than simple chat memory.
-LangGraphのチェックポイントは、単純なチャットメモリよりもはるかに表現力豊かで強力な、任意の複雑なグラフ状態を処理します。
+LangGraphのチェックポイントは、**単純なチャットメモリよりもはるかに表現力豊かで強力な、任意の複雑なグラフ状態を処理**できる。
 
 In the next part, we'll introduce human oversight to our bot to handle situations where it may need guidance or verification before proceeding.
 次のパートでは、ボットに人間の監視を導入し、進行する前にガイダンスや検証が必要な状況に対処します。
 Check out the code snippet below to review our graph from this section.
 以下のコードスニペットを確認して、このセクションのグラフを見直してください。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -791,40 +768,9 @@ graph_builder.add_conditional_edges("chatbot", tools_condition,)
 graph_builder.add_edge("tools", "chatbot")
 graph_builder.set_entry_point("chatbot")
 graph = graph_builder.compile(checkpointer=memory)
-
 ```
 
-```
-
-from typing import Annotated
-from langchain_anthropic import ChatAnthropic
-from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_core.messages import BaseMessage
-from typing_extensions import TypedDict
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
-
-class State(TypedDict):
-    messages: Annotated[list, add_messages]
-
-graph_builder = StateGraph(State)
-tool = TavilySearchResults(max_results=2)
-tools = [tool]
-llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
-llm_with_tools = llm.bind_tools(tools)
-
-def chatbot(state: State):
-    return {"messages": [llm_with_tools.invoke(state["messages"])]}
-
-graph_builder.add_node("chatbot", chatbot)
-tool_node = ToolNode(tools=[tool])
-graph_builder.add_node("tools", tool_node)
-graph_builder.add_conditional_edges("chatbot", tools_condition,)
-graph_builder.add_edge("tools", "chatbot")
-graph_builder.set_entry_point("chatbot")
-graph = graph_builder.compile(checkpointer=memory)
+<!-- ここまで読んだ! -->
 
 ## Part 4: Human-in-the-loop
 
