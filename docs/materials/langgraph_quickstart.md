@@ -1007,16 +1007,16 @@ In the previous section, we showed how to interrupt a graph so that a human coul
 前のセクションでは、グラフを中断して人間がその動作を検査できる方法を示しました。
 
 This lets the human read the state, but if they want to change their agent's course, they'll need to have write access.
-これにより、人間は状態を読み取ることができますが、エージェントの進路を変更したい場合は、書き込みアクセスが必要です。
+これにより、人間は状態を読み取ることができますが、**エージェントの進路を変更したい場合は、書き込みアクセスが必要**です。
 
 Thankfully, LangGraph lets you manually update state!
-幸いなことに、LangGraphでは状態を手動で更新できます！
+幸いなことに、**LangGraphでは状態を手動で更新できます**！
 
 Updating the state lets you control the agent's trajectory by modifying its actions (even modifying the past!).
 状態を更新することで、エージェントの軌道を制御し、その行動を修正することができます（過去を修正することさえ可能です！）。
 
 This capability is particularly useful when you want to correct the agent's mistakes, explore alternative paths, or guide the agent towards a specific goal.
-この機能は、エージェントの誤りを修正したり、代替の道を探ったり、特定の目標に向かってエージェントを導いたりする際に特に便利です。
+この機能は、**エージェントの誤りを修正したり、代替の道を探ったり、特定の目標に向かってエージェントを導いたりする際に特に便利**です。
 
 We'll show how to update a checkpointed state below.
 以下に、チェックポイント状態を更新する方法を示します。
@@ -1027,8 +1027,7 @@ As before, first, define your graph.
 We'll reuse the exact same graph as before.
 前と全く同じグラフを再利用します。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -1067,11 +1066,9 @@ events = graph.stream({"messages": [("user", user_input)]}, config)
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
-```
-
+```python
 snapshot = graph.get_state(config)
 existing_message = snapshot.values["messages"][-1]
 existing_message.pretty_print()
@@ -1097,8 +1094,7 @@ What if we think the chat bot doesn't need to use the tool?
 Let's directly provide the correct response!
 正しい応答を直接提供しましょう！
 
-```
-
+```python
 from langchain_core.messages import AIMessage, ToolMessage
 
 answer = ("LangGraph is a library for building stateful, multi-actor applications with LLMs.")
@@ -1155,16 +1151,15 @@ class State(TypedDict):
 ```
 
 We annotated messages with the pre-built add_messages function.
-私たちは、pre-builtのadd_messages関数でmessagesを注釈しました。
-
+私たちは、**pre-builtのadd_messages関数でmessagesを注釈しました**。
 This instructs the graph to always append values to the existing list, rather than overwriting the list directly.
-これにより、グラフはリストを直接上書きするのではなく、常に既存のリストに値を追加するように指示します。
+**これにより、グラフはリストを直接上書きするのではなく、常に既存のリストに値を追加するように指示**します。
 
 The same logic is applied here, so the messages we passed to update_state were appended in the same way!
 ここでも同じ論理が適用されるため、update_stateに渡したメッセージは同じように追加されました！
 
 The update_state function operates as if it were one of the nodes in your graph!
-update_state関数は、グラフ内のノードの1つであるかのように動作します！
+**update_state関数は、グラフ内のノードの1つであるかのように動作します**！
 
 By default, the update operation uses the node that was last executed, but you can manually specify it below.
 デフォルトでは、更新操作は最後に実行されたノードを使用しますが、以下で手動で指定することもできます。
@@ -1194,7 +1189,7 @@ Notice from the trace that the graph continues into the tools_condition edge.
 トレースから、グラフがtools_conditionエッジに続いていることに注意してください。
 
 We just told the graph to treat the update as_node="chatbot".
-私たちは、グラフに更新をas_node="chatbot"として扱うように指示しました。
+私たちは、**グラフに更新をas_node="chatbot"として扱うように**指示しました。
 
 If we follow the diagram below and start from the chatbot node, we naturally end up in the tools_condition edge and then **end** since our updated message lacks tool calls.
 以下の図に従い、チャットボットノードから始めると、自然にtools_conditionエッジに到達し、その後__end__に至ります。更新されたメッセージにはツール呼び出しがないためです。
@@ -1228,13 +1223,13 @@ print(snapshot.next)
 ```
 
 The add_messages function we used to annotate our graph's State above controls how updates are made to the messages key.
-上記でグラフのStateを注釈するために使用したadd_messages関数は、messagesキーへの更新がどのように行われるかを制御します。
+上記で**グラフのStateを注釈するために使用したadd_messages関数は、messagesキーへの更新がどのように行われるかを制御**します。
 
 This function looks at any message IDs in the new_messages list.
 この関数は、新しいmessagesリスト内のメッセージIDを確認します。
 
 If the ID matches a message in the existing state, add_messages overwrites the existing message with the new content.
-IDが既存の状態のメッセージと一致する場合、add_messagesは既存のメッセージを新しいコンテンツで上書きします。
+**IDが既存の状態のメッセージと一致する場合、add_messagesは既存のメッセージを新しいコンテンツで上書き**します。
 
 As an example, let's update the tool invocation to make sure we get good results from our search engine!
 例として、ツールの呼び出しを更新して、検索エンジンから良い結果を得られるようにしましょう！
@@ -1242,8 +1237,7 @@ As an example, let's update the tool invocation to make sure we get good results
 First, start a new thread:
 まず、新しいスレッドを開始します。
 
-```
-
+```python
 user_input = "I'm learning LangGraph. Could you do some research on it for me?"
 config = {"configurable": {"thread_id": "2"}}  # we'll use thread_id = 2 here
 events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode="values")
@@ -1266,8 +1260,7 @@ Args: query: LangGraph framework for language models
 
 ```
 
-```
-
+```python
 from langchain_core.messages import AIMessage
 
 snapshot = graph.get_state(config)
@@ -1289,11 +1282,9 @@ print("Message ID", new_message.id)
 graph.update_state(config, {"messages": [new_message]})
 print("\n\nTool calls")
 graph.get_state(config).values["messages"][-1].tool_calls
-
 ```
 
 ```
-
 Original
 Message ID run-342f3f54-356b-4cc1-b747-573f6aa31054-0
 {'name': 'tavily_search_results_json', 'args': {'query': 'LangGraph framework for language models'}, 'id': 'toolu_01TfAeisrpx4ddgJpoAxqrVh', 'type': 'tool_call'}
@@ -1311,7 +1302,7 @@ Tool calls
 ```
 
 Notice that we've modified the AI's tool invocation to search for "LangGraph human-in-the-loop workflow" instead of the simple "LangGraph".
-AIのツール呼び出しを単純な「LangGraph」ではなく「LangGraph human-in-the-loop workflow」を検索するように変更したことに注意してください。
+AIのツール呼び出しを単純な「LangGraph」ではなく「LangGraph human-in-the-loop workflow」を検索するように変更したことに注目してください。
 
 Check out the LangSmith trace to see the state update call - you can see our new message has successfully updated the previous AI message.
 状態更新呼び出しを確認するためにLangSmithトレースをチェックしてください。新しいメッセージが以前のAIメッセージを正常に更新したことがわかります。
@@ -1329,8 +1320,7 @@ for event in events:
 
 ```
 
-```
-
+```shell
 ==================================[1m Ai Message [0m==================================
 [{'text': "Certainly! I'd be happy to research LangGraph for you. To get the most up-to-date and accurate information, I'll use the Tavily search engine to look this up. Let me do that for you now.", 'type': 'text'}, {'id': 'toolu_01TfAeisrpx4ddgJpoAxqrVh', 'input': {'query': 'LangGraph framework for language models'}, 'name': 'tavily_search_results_json', 'type': 'tool_use'}]
 Tool Calls: tavily_search_results_json (toolu_01TfAeisrpx4ddgJpoAxqrVh)
@@ -1355,24 +1345,20 @@ LangGraphは、特にプロセスの重要な段階で人間の監視や入力�
 
 Would you like me to research any specific aspect of LangGraph in more detail, or do you have any questions about what I've found so far?
 LangGraphの特定の側面についてさらに詳しく調査してほしいですか、それとも私がこれまでに見つけたことについて質問がありますか？
-
 ```
 
 All of this is reflected in the graph's checkpointed memory, meaning if we continue the conversation, it will recall all the modified state.
 これらすべてはグラフのチェックポイントメモリに反映されており、会話を続けると、すべての変更された状態を記憶します。
 
-```
-
+```python
 events = graph.stream({"messages": ("user", "Remember what I'm learning about?",)}, config, stream_mode="values",)
 
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
 ```
-
 ================================[1m Human Message [0m=================================
 Remember what I'm learning about?
 ==================================[1m Ai Message [0m==================================
@@ -1389,17 +1375,18 @@ For example:
 5. Comparisons with other similar frameworks
 Or if you have any specific questions about what you've learned so far, I'd be happy to help clarify or expand on those topics.
 Please let me know what would be most useful for your learning process.
-
 ```
 
 The graph code for this section is identical to previous ones.
 このセクションのグラフコードは、以前のものと同じです。
 
 The key snippets to remember are to add .compile(..., interrupt_before=[...]) (or interrupt_after) if you want to explicitly pause the graph whenever it reaches a node.
-ノードに到達するたびにグラフを明示的に一時停止したい場合は、.compile(..., interrupt_before=[...])（またはinterrupt_after）を追加することを忘れないでください。
+**ノードに到達するたびにグラフを明示的に一時停止したい場合**は、.compile(..., interrupt_before=[...])（またはinterrupt_after）を追加することを忘れないでください。
 
 Then you can use update_state to modify the checkpoint and control how the graph should proceed.
 その後、update_stateを使用してチェックポイントを変更し、グラフがどのように進行するかを制御できます。
+
+<!-- ここまで読んだ! -->
 
 ## Part 6: Customizing State¶ 状態のカスタマイズ
 
