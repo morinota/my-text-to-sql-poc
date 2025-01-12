@@ -1391,29 +1391,30 @@ Then you can use update_state to modify the checkpoint and control how the graph
 ## Part 6: Customizing State¶ 状態のカスタマイズ
 
 So far, we've relied on a simple state (it's just a list of messages!).
-これまで、私たちはシンプルな状態（メッセージのリストだけです）に依存してきました。
+これまで、私たちは**シンプルな状態（メッセージのリストだけ）**に依存してきました。
 You can go far with this simple state, but if you want to define complex behavior without relying on the message list, you can add additional fields to the state.
-このシンプルな状態で多くのことを達成できますが、メッセージリストに依存せずに複雑な動作を定義したい場合は、状態に追加のフィールドを追加できます。
+**このシンプルな状態で多くのことを達成できますが、メッセージリストに依存せずに複雑な動作を定義したい場合は、状態に追加のフィールドを追加できます**。
 In this section, we will extend our chat bot with a new node to illustrate this.
 このセクションでは、これを示すために新しいノードを使ってチャットボットを拡張します。
 
 In the examples above, we involved a human deterministically: the graph always interrupted whenever a tool was invoked.
 上記の例では、私たちは人間を決定論的に関与させました：ツールが呼び出されるたびにグラフは常に中断されました。
 Suppose we wanted our chat bot to have the choice of relying on a human.
-チャットボットが人間に依存する選択肢を持つようにしたいとしましょう。
+**チャットボットが人間に依存する選択肢を持つ**ようにしたいとしましょう。
 
 One way to do this is to create a passthrough "human" node, before which the graph will always stop.
-これを行う一つの方法は、グラフが常に停止するパススルー「人間」ノードを作成することです。
+これを行う一つの方法は、**グラフが常に停止するpassthroughとして「人間」ノードを作成すること**です。
 We will only execute this node if the LLM invokes a "human" tool.
 このノードは、LLMが「人間」ツールを呼び出した場合にのみ実行します。
 For our convenience, we will include an "ask_human" flag in our graph state that we will flip if the LLM calls this tool.
-私たちの便宜のために、LLMがこのツールを呼び出した場合に切り替える「ask_human」フラグをグラフ状態に含めます。
+私たちの便宜のために、**LLMがこのツールを呼び出した場合に切り替える「ask_human」フラグをグラフ状態に含める**。
+
+<!-- ここまで読んだ! -->
 
 Below, define this new graph, with an updated State
 以下に、更新された状態を持つ新しいグラフを定義します。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -1424,9 +1425,9 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 class State(TypedDict):
-    messages: Annotated[list, add_messages]  # This flag is new
+    messages: Annotated[list, add_messages]  
+    # This flag is new
     ask_human: bool
-
 ```
 
 Next, define a schema to show the model to let it decide to request assistance.
@@ -1438,47 +1439,40 @@ This notebook uses Pydantic v2 BaseModel, which requires langchain-core >= 0.3.
 Using langchain-core < 0.3 will result in errors due to mixing of Pydantic v1 and v2 BaseModels.
 langchain-core < 0.3を使用すると、Pydantic v1とv2 BaseModelsの混在によりエラーが発生します。
 
-```
-
+```python
 from pydantic import BaseModel
 
 class RequestAssistance(BaseModel):
-    """Escalate the conversation to an expert.
+    """
     会話を専門家にエスカレーションします。
-    Use this if you are unable to assist directly or if the user requires support beyond your permissions.
     直接支援できない場合や、ユーザーがあなたの権限を超えた支援を必要とする場合に使用します。
-    To use this function, relay the user's 'request' so the expert can provide the right guidance.
-    この機能を使用するには、ユーザーの「リクエスト」を中継して、専門家が適切なガイダンスを提供できるようにします。
+    この機能を使用するには、ユーザを中継して、専門家が適切なガイダンスを提供できるようにします。
     """
     request: str
-
 ```
 
 Next, define the chatbot node.
 次に、チャットボットノードを定義します。
 The primary modification here is flip the ask_human flag if we see that the chat bot has invoked the RequestAssistance flag.
-ここでの主な変更は、チャットボットがRequestAssistanceフラグを呼び出した場合にask_humanフラグを切り替えることです。
+ここでの主な変更は、**チャットボットがRequestAssistanceフラグを呼び出した場合にask_humanフラグを切り替えること**です。
 
-```
-
+```python
 tool = TavilySearchResults(max_results=2)
 tools = [tool]
 llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
-
 # We can bind the llm to a tool definition, a pydantic model, or a json schema
-
+# 私たちはllmをツール定義、pydanticモデル、またはjsonスキーマにバインドすることができます。
 llm_with_tools = llm.bind_tools(tools + [RequestAssistance])
 
 def chatbot(state: State):
     response = llm_with_tools.invoke(state["messages"])
     ask_human = False
-    if (response.tool_calls and response.tool_calls[0]["name"] == RequestAssistance.**name**):
+    if (response.tool_calls and response.tool_calls[0]["name"] == RequestAssistance.__name__):
         ask_human = True
     return {
         "messages": [response],
         "ask_human": ask_human
     }
-
 ```
 
 Next, create the graph builder and add the chatbot and tools nodes to the graph, same as before.
@@ -1501,8 +1495,7 @@ If the human does not manually update the state during the interrupt, it inserts
 This node also unsets the ask_human flag so the graph knows not to revisit the node unless further requests are made.
 このノードはまた、ask_humanフラグを解除し、さらなるリクエストがない限りノードを再訪しないことをグラフに知らせます。
 
-```
-
+```python
 from langchain_core.messages import AIMessage, ToolMessage
 
 def create_response(response: str, ai_message: AIMessage):
@@ -1512,8 +1505,9 @@ def human_node(state: State):
     new_messages = []
     if not isinstance(state["messages"][-1], ToolMessage):
         # Typically, the user will have updated the state during the interrupt.
-        # If they choose not to, we will include a placeholder ToolMessage to
-        # let the LLM continue.
+        # 通常、ユーザーは中断中に状態を更新しているでしょう。
+        # If they choose not to, we will include a placeholder ToolMessage to let the LLM continue.
+        # もし更新しないことを選択した場合、LLMが続行できるようにプレースホルダーのToolMessageを含めます。
         new_messages.append(create_response("No response from human.", state["messages"][-1]))
     return {
         # Append the new messages
@@ -1523,13 +1517,12 @@ def human_node(state: State):
     }
 
 graph_builder.add_node("human", human_node)
-
 ```
 
 Next, define the conditional logic.
 次に、条件ロジックを定義します。
 The select_next_node will route to the human node if the flag is set.
-select_next_nodeは、フラグが設定されている場合にhumanノードにルーティングします。
+`select_next_node` は、フラグが設定されている場合にhumanノードにルーティングします。
 Otherwise, it lets the prebuilt tools_condition function choose the next node.
 そうでなければ、prebuilt tools_condition関数が次のノードを選択します。
 Recall that the tools_condition function simply checks to see if the chatbot has responded with any tool_calls in its response message.
@@ -1539,8 +1532,7 @@ If so, it routes to the action node.
 Otherwise, it ends the graph.
 そうでなければ、グラフは終了します。
 
-```
-
+```python
 def select_next_node(state: State):
     if state["ask_human"]:
         return "human"
@@ -1548,7 +1540,6 @@ def select_next_node(state: State):
     return tools_condition(state)
 
 graph_builder.add_conditional_edges("chatbot", select_next_node, {"human": "human", "tools": "tools", END: END},)
-
 ```
 
 Finally, add the simple directed edges and compile the graph.
@@ -1556,7 +1547,7 @@ Finally, add the simple directed edges and compile the graph.
 These edges instruct the graph to always flow from node a -> b whenever a finishes executing.
 これらのエッジは、ノードaが実行を終了するたびに常にノードaからノードbに流れるようにグラフに指示します。
 
-```
+```python
 
 # The rest is the same
 
@@ -1575,8 +1566,7 @@ graph = graph_builder.compile(checkpointer=memory,
 If you have the visualization dependencies installed, you can see the graph structure below:
 視覚化依存関係がインストールされている場合、以下にグラフ構造を表示できます。
 
-```
-
+```python
 from IPython.display import Image, display
 
 try:
@@ -1584,7 +1574,6 @@ try:
 except Exception:
     # This requires some extra dependencies and is optional
     pass
-
 ```
 
 The chat bot can either request help from a human (chatbot->select->human), invoke the search engine tool (chatbot->select->action), or directly respond (chatbot->select->end).
@@ -1596,8 +1585,7 @@ Let's see this graph in action.
 We will request for expert assistance to illustrate our graph.
 グラフを示すために専門家の支援を要求します。
 
-```
-
+```python
 user_input = "I need some expert guidance for building this AI agent. Could you request assistance for me?"
 config = {"configurable": {"thread_id": "1"}}
 
@@ -1607,11 +1595,9 @@ events = graph.stream({"messages": [("user", user_input)]}, config, stream_mode=
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
-```
-
+```shell
 ================================[1m Human Message [0m=================================
 I need some expert guidance for building this AI agent. Could you request assistance for me?
 ==================================[1m Ai Message [0m==================================
@@ -1619,14 +1605,11 @@ I need some expert guidance for building this AI agent. Could you request assist
 Tool Calls: RequestAssistance (toolu_01Mo3N2c1byuSZwT1vyJWRia)
 Call ID: toolu_01Mo3N2c1byuSZwT1vyJWRia
 Args: request: The user needs expert guidance for building an AI agent. They require specialized knowledge and support in AI development and implementation.
-
 ```
 
-```
-
+```python
 snapshot = graph.get_state(config)
 snapshot.next
-
 ```
 
 ```
@@ -1717,7 +1700,7 @@ Do you have any specific questions about LangGraph or AI agent development that 
 Congratulations!
 おめでとうございます！
 You've now added an additional node to your assistant graph to let the chat bot decide for itself whether or not it needs to interrupt execution.
-これで、チャットボットが実行を中断する必要があるかどうかを自分で決定できるように、アシスタントグラフに追加のノードを追加しました。
+これで、**チャットボットが実行を中断する必要があるかどうかを自分で決定できるように、アシスタントグラフに追加のノードを追加**しました。
 You did so by updating the graph State with a new ask_human field and modifying the interruption logic when compiling the graph.
 グラフ状態を新しいask_humanフィールドで更新し、グラフをコンパイルする際に中断ロジックを修正することで実現しました。
 This lets you dynamically include a human in the loop while maintaining full memory every time you execute the graph.
@@ -1727,8 +1710,7 @@ We're almost done with the tutorial, but there is one more concept we'd like to 
 This section's code is reproduced below for your reference.
 このセクションのコードは、参考のために以下に再掲します。
 
-```
-
+```python
 from typing import Annotated
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -1811,26 +1793,27 @@ graph_builder.set_entry_point("chatbot")
 
 memory = MemorySaver()
 graph = graph_builder.compile(checkpointer=memory, interrupt_before=["human"],)
+```
+
+<!-- ここまで読んだ! -->
 
 ## Part 7: Time Travel¶ 第7部: タイムトラベル
 
 In a typical chat bot workflow, the user interacts with the bot 1 or more times to accomplish a task.
-典型的なチャットボットのワークフローでは、ユーザーはタスクを達成するためにボットと1回以上対話します。
-
+典型的なチャットボットのワークフローでは、**ユーザはタスクを達成するためにボットと1回以上対話**します。
 In the previous sections, we saw how to add memory and a human-in-the-loop to be able to checkpoint our graph state and manually override the state to control future responses.
 前のセクションでは、メモリを追加し、ヒューマン・イン・ザ・ループを使用してグラフの状態をチェックポイントし、将来の応答を制御するために状態を手動でオーバーライドする方法を見ました。
 
 But what if you want to let your user start from a previous response and "branch off" to explore a separate outcome?
-しかし、ユーザーが以前の応答から始めて「分岐」し、別の結果を探求できるようにしたい場合はどうでしょうか？
-
+しかし、ユーザが以前の応答から始めて「分岐」し、別の結果を探求できるようにしたい場合はどうでしょうか？
 Or what if you want users to be able to "rewind" your assistant's work to fix some mistakes or try a different strategy (common in applications like autonomous software engineers)?
-あるいは、ユーザーがアシスタントの作業を「巻き戻して」、いくつかの間違いを修正したり、異なる戦略を試したりできるようにしたい場合（自律ソフトウェアエンジニアのようなアプリケーションで一般的）にはどうでしょうか？
+あるいは、**ユーザがアシスタントの作業を「巻き戻して」、いくつかの間違いを修正したり、異なる戦略を試したりできるようにしたい**場合（自律ソフトウェアエンジニアのようなアプリケーションで一般的）にはどうでしょうか？
 
 You can create both of these experiences and more using LangGraph's built-in "time travel" functionality.
-LangGraphの組み込み「タイムトラベル」機能を使用することで、これらの体験やその他の体験を作成できます。
+**LangGraphの組み込み「タイムトラベル」機能**を使用することで、これらの体験やその他の体験を作成できます。
 
 In this section, you will "rewind" your graph by fetching a checkpoint using the graph's get_state_history method.
-このセクションでは、グラフの get_state_history メソッドを使用してチェックポイントを取得することで、グラフを「巻き戻します」。
+このセクションでは、グラフの `get_state_history` メソッドを使用してチェックポイントを取得することで、グラフを「巻き戻します」。
 
 You can then resume execution at this previous point in time.
 その後、この以前の時点で実行を再開できます。
@@ -1841,8 +1824,7 @@ First, recall our chatbot graph.
 We don't need to make any changes from before:
 以前から変更を加える必要はありません：
 
-```
-
+```python
 from typing import Annotated, Literal
 from langchain_anthropic import ChatAnthropic
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -1938,18 +1920,15 @@ Let's have our graph take a couple steps.
 Every step will be checkpointed in its state history:
 すべてのステップは、その状態履歴にチェックポイントされます。
 
-```
-
+```python
 config = {"configurable": {"thread_id": "1"}}
 events = graph.stream({"messages": [("user", "I'm learning LangGraph. Could you do some research on it for me?")]}, config, stream_mode="values",)
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
-```
-
+```shell
 ================================[1m Human Message [0m=================================
 I'm learning LangGraph. Could you do some research on it for me?
 ==================================[1m Ai Message [0m==================================
@@ -1989,20 +1968,17 @@ While not explicitly mentioned in the search results, LangGraph is typically use
 - Applications requiring memory and context management across multiple steps or actors
 Learning LangGraph can be a valuable skill, especially if you're interested in developing advanced applications with LLMs that go beyond simple question-answering or text generation tasks. It allows for the creation of more dynamic, interactive, and stateful AI systems.
 Is there any specific aspect of LangGraph you'd like to know more about, or do you have any questions about how it compares to or works with LangChain?
-
 ```
 
-```
-
-events = graph.stream({"messages": [("user", "Ya that's helpful. Maybe I'll build an autonomous agent with it!")]}, config, stream_mode="values",)
+```python
+# events = graph.stream({"messages": [("user", "Ya that's helpful. Maybe I'll build an autonomous agent with it!")]}, config, stream_mode="values",)
+events = graph.stream({"messages": [("user", "わあ、とても助かります! それで自律エージェントを構築するかもしれません!")]}, config, stream_mode="values",)
 for event in events:
     if "messages" in event:
         event["messages"][-1].pretty_print()
-
 ```
 
-```
-
+```shell
 ================================[1m Human Message [0m=================================
 Ya that's helpful. Maybe I'll build an autonomous agent with it!
 ==================================[1m Ai Message [0m==================================
@@ -2040,11 +2016,12 @@ To get started, you might want to:
 5. Test your agent thoroughly with various scenarios to ensure robust performance.
 Remember, building an autonomous agent is an iterative process. Start with a basic version and progressively enhance its capabilities. This approach will help you understand the intricacies of LangGraph while creating a sophisticated AI application.
 Do you have any specific ideas about what kind of tasks or domain you want your autonomous agent to specialize in? This could help guide the design and implementation process.
-
 ```
 
-```
+Now that we've had the agent take a couple steps, we can replay the full state history to see everything that occurred.
+エージェントがいくつかのステップを踏んだので、完全な状態履歴を再生して発生したすべてを確認できます。
 
+```python
 to_replay = None
 for state in graph.get_state_history(config):
     print("Num Messages: ", len(state.values["messages"]), "Next: ", state.next)
@@ -2052,11 +2029,9 @@ for state in graph.get_state_history(config):
     if len(state.values["messages"]) == 6:
         # We are somewhat arbitrarily selecting a specific state based on the number of chat messages in the state.
         to_replay = state
-
 ```
 
-```
-
+```shell
 Num Messages:  8 Next:  ()
 --------------------------------------------------------------------------------
 
@@ -2086,27 +2061,27 @@ Num Messages:  1 Next:  ('chatbot',)
 
 Num Messages:  0 Next:  ('**start**',)
 --------------------------------------------------------------------------------
-
 ```
+
+Notice that checkpoints are saved for every step of the graph. This spans invocations so you can rewind across a full thread's history. We've picked out to_replay as a state to resume from. This is the state after the chatbot node in the second graph invocation above.
+**グラフの各ステップにチェックポイントが保存されることに注意**してください。これは呼び出しをまたいでいるため、スレッド全体の履歴を巻き戻すことができます。上記の2番目のグラフ呼び出しのチャットボットノードの後の状態として再開するために to_replay を選択しました。
 
 Resuming from this point should call the action node next.
 このポイントから再開すると、次にアクションノードが呼び出されるはずです。
 
-```
-
+```python
 print(to_replay.next)
 print(to_replay.config)
-
 ```
 
-```
-
+```shell
 ('tools',){'configurable': {'thread_id': '1', 'checkpoint_ns': '', 'checkpoint_id': '1ef7d094-2634-687c-8006-49ddde5b2f1c'}}
-
 ```
 
-```
+Notice that the checkpoint's config (to_replay.config) contains a checkpoint_id timestamp. Providing this checkpoint_id value tells LangGraph's checkpointer to load the state from that moment in time. Let's try it below:
+チェックポイントの構成（to_replay.config）には、**チェックポイントIDのタイムスタンプが含まれていることに注意**してください。このチェックポイントID値を提供すると、LangGraphのチェックポインターはその時点の状態を読み込むようになります。以下で試してみましょう：
 
+```python
 # The `checkpoint_id` in the `to_replay.config` corresponds to a state we've persisted to our checkpointer
 
 for event in graph.stream(None, to_replay.config, stream_mode="values"):
@@ -2165,14 +2140,13 @@ d. Orchestrate Interactions: Use LangGraph to manage how these agents interact a
 Building an autonomous agent with LangGraph is an exciting project that will give you hands-on experience with advanced concepts in AI application development. It's a great way to learn about state management, multi-agent coordination, and complex workflow design in AI systems.
 As you embark on this project, remember to start small and gradually increase complexity. You might begin with a simple autonomous agent that performs a specific task, then expand its capabilities and add more agents or components as you become more comfortable with LangGraph.
 Do you have a specific type of autonomous agent in mind, or would you like some suggestions for beginner-friendly autonomous agent projects to start with?
-
 ```
 
 Congratulations! You've now used time-travel checkpoint traversal in LangGraph.
 おめでとうございます！これで、LangGraphにおけるタイムトラベルチェックポイントのトラバースを使用しました。
 
 Being able to rewind and explore alternative paths opens up a world of possibilities for debugging, experimentation, and interactive applications.
-巻き戻して代替の経路を探求できることは、デバッグ、実験、インタラクティブなアプリケーションの可能性の世界を開きます。
+**巻き戻して代替の経路を探求できること**は、デバッグ、実験、インタラクティブなアプリケーションの可能性の世界を開きます。
 
 ## Next Steps 次のステップ
 
@@ -2181,18 +2155,31 @@ Take your journey further by exploring deployment and advanced features:
 
 ### Server Quickstart サーバーのクイックスタート
 
-### LangGraph Cloud¶
+- LangGraph Server Quickstart: Launch a LangGraph server locally and interact with it using the REST API and LangGraph Studio Web UI.
+- LangGraphサーバークイックスタート：LangGraphサーバーをローカルで起動し、REST APIとLangGraph Studio Web UIを使用して対話します。
 
 ### LangGraph Cloud
 
+- LangGraph Cloud QuickStart: Deploy your LangGraph app using LangGraph Cloud.
+- LangGraph Cloudクイックスタート：LangGraph Cloudを使用してLangGraphアプリをデプロイします。
+
 ### LangGraph Framework¶ LangGraphフレームワーク
+
+- LangGraph Concepts: Learn the foundational concepts of LangGraph.
+- LangGraphの概念：LangGraphの基本的な概念を学びます。
+- LangGraph How-to Guides: Guides for common tasks with LangGraph.
+- LangGraph How-toガイド：LangGraphでの一般的なタスクのガイド。
 
 ### LangGraph Platform¶ LangGraphプラットフォーム
 
 Expand your knowledge with these resources:
 これらのリソースで知識を広げましょう：
 
-```md
+- LangGraph Platform Concepts: Understand the foundational concepts of the LangGraph Platform.
+  - LangGraph Platformの概念：LangGraph Platformの基本的な概念を理解します。
+- LangGraph Platform How-to Guides: Guides for common tasks with LangGraph Platform.
+  - LangGraph Platform How-toガイド：LangGraph Platformでの一般的なタスクのガイド。
+
 ## Comments コメント
 
 ```  
