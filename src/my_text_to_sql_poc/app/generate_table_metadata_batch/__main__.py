@@ -1,50 +1,29 @@
 from pathlib import Path
 
-import polars as pl
 import typer
-from langchain_core.prompts import PromptTemplate
 from loguru import logger
 
-from my_text_to_sql_poc.app.generate_table_metadata_batch.table_metadata_model import TableMetadataSchema
-from my_text_to_sql_poc.service.model_gateway import ModelGateway
+from my_text_to_sql_poc.app.generate_table_metadata_batch.table_metadata_generator import generate_table_metadata
 
-app = typer.Typer()
-
-
-# プロンプトの設定
-METADATA_PROMPT_PATH = Path("prompts/generate_table_metadata_jp.txt")
-# 対象テーブル一覧
-
-
-def generate_table_metadata(
-    table_name: str,
-    related_queries: list[str],
-) -> TableMetadataSchema:
-    """対象テーブルのスキーマ情報と、対象テーブルを利用してるサンプルクエリ達を元に、LLMにテーブルメタデータを生成させる"""
-    prompt_template_str = METADATA_PROMPT_PATH.read_text()
-    prompt_template = PromptTemplate(
-        template=prompt_template_str,
-        input_variables=["table_name", "audit_logs"],
-    )
-
-    formatted_prompt = prompt_template.format(
-        table_name=table_name,
-        audit_logs="\n\n".join(related_queries),
-    )
-
-    return ModelGateway().generate_response_with_structured_output(formatted_prompt, TableMetadataSchema)
+app = typer.Typer(pretty_exceptions_enable=False)
 
 
 @app.command()
 def main(
     sample_queries_dir: Path = typer.Option(..., help="Directory containing sample queries"),
     table_metadata_dir: Path = typer.Option(..., help="Output directory for summarized table schemas"),
+    target_tables: list[str] = typer.Option(None, help="Target tables to generate metadata for"),
     full_refresh: bool = typer.Option(False, help="Force full refresh of all summaries"),
     log_level: str = typer.Option("INFO", help="ログレベルを指定します (DEBUG, INFO, WARNING, ERROR)"),
 ):
     # ログレベルを設定
     logger.remove()  # デフォルトのログ設定を削除
     logger.add(lambda msg: typer.echo(msg, err=True), level=log_level.upper())
+
+    if not target_tables:
+        raise ValueError(
+            "target_tables引数は必須です。指定方法: --target-tables table_name1 --target-tables table_name2 --target-tables table_name3"
+        )
 
     # 出力ディレクトリが存在しない場合は作成
     if not table_metadata_dir.exists():
@@ -59,7 +38,7 @@ def main(
     # サンプルクエリ一覧を取得
     sample_query_texts = [file.read_text() for file in sample_queries_dir.glob("*.sql")]
 
-    for table_name in TARGET_TABLES:
+    for table_name in target_tables:
         logger.info(f"Processing table: {table_name}")
 
         # 差分更新チェック: すでにサマリファイルが存在している場合はスキップ
@@ -68,41 +47,28 @@ def main(
             logger.info(f"Table Metadata for {table_name} already exists, skipping")
             continue
 
-        # audit_logから対象テーブルを使用してるクエリのみを抽出する (一旦setにして重複を除去)
+        # 対象テーブルを使用してるクエリを検索してくる (一旦setにして重複を除去)
         related_queries = list(set([query for query in sample_query_texts if table_name in query]))
+        logger.info(f"Found {len(related_queries)} related queries for {table_name}")
+
+        # 人手で作られたテーブルの説明文を取得
+        reffered_doc_path = Path(f"data/table_docs/{table_name}.csv")
+
+        if reffered_doc_path.exists():
+            reffered_doc = reffered_doc_path.read_text()
+            logger.info(f"Found reference doc for {table_name}")
+        else:
+            reffered_doc = ""
+            logger.warning(f"No reference doc found for {table_name}")
 
         table_metadata = generate_table_metadata(
             table_name,
-            related_queries[0:100],  # input tokenのサイズ制限のため、100件までにしておく
+            related_queries[0:100],  # input tokenのサイズ制限のため、200件までにしておく
+            reffered_doc,
         )
 
-        output_path.write_text(table_metadata)
-
-
-def _remove_prefix_query(query: str) -> str:
-    """
-    WITHまたはSELECT以前の文字列を削除
-    """
-    if "WITH" in query.upper():
-        return query[query.upper().index("WITH") :]
-    elif "SELECT" in query.upper():
-        return query[query.upper().index("SELECT") :]
-    return query
+        output_path.write_text(table_metadata.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":
-    # app()
-
-    table_name = "subscription_events"
-    # sample_queries_dir = Path("data/sample_queries")
-    # sample_query_texts = [file.read_text() for file in sample_queries_dir.glob("*.sql")]
-
-    sample_queries_dir = Path("data/sample_queries")
-    related_queries = [file.read_text() for file in sample_queries_dir.glob("*.sql") if table_name in file.read_text()]
-    table_metadata = generate_table_metadata(
-        table_name,
-        related_queries[0:100],  # input tokenのサイズ制限のため、100件までにしておく
-    )
-    metadata_json = table_metadata.model_dump_json(indent=2)
-    print(metadata_json)
-    Path(f"temp_table_metadata_{table_name}.json").write_text(metadata_json)
+    app()
