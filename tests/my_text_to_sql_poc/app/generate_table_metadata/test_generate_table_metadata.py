@@ -1,7 +1,7 @@
 import polars as pl
 
 from my_text_to_sql_poc.app.generate_table_metadata_batch.__main__ import generate_table_metadata
-from my_text_to_sql_poc.app.generate_table_metadata_batch.table_metadata_model import TableMetadataSchema
+from my_text_to_sql_poc.app.generate_table_metadata_batch.table_metadata_generator import TableMetadataSchema
 
 
 def test_SQLクエリの実行ログに基づいてテーブルメタデータが推定される():
