@@ -62,7 +62,7 @@ StateGraphオブジェクトは、チャットボットの構造を「状態遷�
 We'll add nodes to represent the llm and functions our chatbot can call and edges to specify how the bot should transition between these functions.
 チャットボットが呼び出すことができるllmや関数を表すノードを追加し、これらの関数間でボットがどのように遷移するかを指定するエッジを追加します。
 
-```
+```python
 from typing import Annotated
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
@@ -105,16 +105,13 @@ Nodes represent units of work.
 They are typically regular python functions.
 **ノードは通常、通常のPython関数**です。
 
-```
+```python
 from langchain_anthropic import ChatAnthropic
 
 llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
 
 def chatbot(state: State):
     return {"messages": [llm.invoke(state["messages"])]}
-# The first argument is the unique node name
-# The second argument is the function or object that will be called whenever
-# the node is used.
 graph_builder.add_node("chatbot", chatbot)
 ```
 
@@ -180,19 +177,20 @@ def stream_graph_updates(user_input: str):
     for event in graph.stream({"messages": [("user", user_input)]}):
         for value in event.values():
             print("Assistant:", value["messages"][-1].content)
-    while True:
-        try:
-            user_input = input("User: ")
-            if user_input.lower() in ["quit", "exit", "q"]:
-                print("Goodbye!")
-                break
-            stream_graph_updates(user_input)
-        except:
-            # fallback if input() is not available
-            user_input = "What do you know about LangGraph?"
-            print("User: " + user_input)
-            stream_graph_updates(user_input)
+
+while True:
+    try:
+        user_input = input("User: ")
+        if user_input.lower() in ["quit", "exit", "q"]:
+            print("Goodbye!")
             break
+        stream_graph_updates(user_input)
+    except:
+        # fallback if input() is not available
+        user_input = "What do you know about LangGraph?"
+        print("User: " + user_input)
+        stream_graph_updates(user_input)
+        break
 ```
 
 ```
@@ -386,8 +384,7 @@ The condition will route to tools if tool calls are present and END if not.
 Later, we will replace this with the prebuilt tools_condition to be more concise, but implementing it ourselves first makes things more clear.
 後でこれをプリビルドのtools_conditionに置き換えてより簡潔にしますが、最初に自分たちで実装することでより明確になります。
 
-```
-
+```python
 from typing import Literal
 
 def route_tools(state: State):
@@ -644,7 +641,7 @@ for event in events:
 
 ```shell
 ================================[1m Human Message [0m=================================
-Hi there! My name is Will.
+My name is Will.
 ==================================[1m Ai Message [0m==================================
 Hello Will! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to know or discuss?
 ```
@@ -653,8 +650,7 @@ Let's ask a followup: see if it remembers your name.
 次に、フォローアップを尋ねてみましょう：あなたの名前を覚えているかどうかを確認します。
 (続けて上のコードの下に書く! メモリ上にcheckpointingしてるので、一回アプリケーションを落とすとメモリが解放されてしまう)
 
-```
-
+```python
 user_input = "Remember my name?"
 
 # The config is the **second positional argument** to stream() or invoke()
@@ -697,7 +693,7 @@ By now, we have made a few checkpoints across two different threads.
 But what goes into a checkpoint?
 しかし、**チェックポイントには何が含まれるのでしょうか？**
 To inspect a graph's state for a given config at any time, call get_state(config).
-**特定の設定に対するグラフの状態をいつでも確認するには、get_state(config)を呼び出し**ます。
+**特定のconfigに対するグラフの状態をいつでも確認するには、get_state(config)を呼び出し**ます。
 
 ```python
 snapshot = graph.get_state(config)
@@ -706,13 +702,12 @@ snapshot
 
 ```
 StateSnapshot(values={'messages': [HumanMessage(content='Hi there! My name is Will.', additional_kwargs={}, response_metadata={}, id='8c1ca919-c553-4ebf-95d4-b59a2d61e078'), AIMessage(content="Hello Will! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to know or discuss?", additional_kwargs={}, response_metadata={'id': 'msg_01WTQebPhNwmMrmmWojJ9KXJ', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 405, 'output_tokens': 32}}, id='run-58587b77-8c82-41e6-8a90-d62c444a261d-0', usage_metadata={'input_tokens': 405, 'output_tokens': 32, 'total_tokens': 437}), HumanMessage(content='Remember my name?', additional_kwargs={}, response_metadata={}, id='daba7df6-ad75-4d6b-8057-745881cea1ca'), AIMessage(content="Of course, I remember your name, Will. I always try to pay attention to important details that users share with me. Is there anything else you'd like to talk about or any questions you have? I'm here to help with a wide range of topics or tasks.", additional_kwargs={}, response_metadata={'id': 'msg_01E41KitY74HpENRgXx94vag', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 444, 'output_tokens': 58}}, id='run-ffeaae5c-4d2d-4ddb-bd59-5d5cbf2a5af8-0', usage_metadata={'input_tokens': 444, 'output_tokens': 58, 'total_tokens': 502})]}, next=(), config={'configurable': {'thread_id': '1', 'checkpoint_ns': '', 'checkpoint_id': '1ef7d06e-93e0-6acc-8004-f2ac846575d2'}}, metadata={'source': 'loop', 'writes': {'chatbot': {'messages': [AIMessage(content="Of course, I remember your name, Will. I always try to pay attention to important details that users share with me. Is there anything else you'd like to talk about or any questions you have? I'm here to help with a wide range of topics or tasks.", additional_kwargs={}, response_metadata={'id': 'msg_01E41KitY74HpENRgXx94vag', 'model': 'claude-3-5-sonnet-20240620', 'stop_reason': 'end_turn', 'stop_sequence': None, 'usage': {'input_tokens': 444, 'output_tokens': 58}}, id='run-ffeaae5c-4d2d-4ddb-bd59-5d5cbf2a5af8-0', usage_metadata={'input_tokens': 444, 'output_tokens': 58, 'total_tokens': 502})]}}, 'step': 4, 'parents': {}}, created_at='2024-09-27T19:30:10.820758+00:00', parent_config={'configurable': {'thread_id': '1', 'checkpoint_ns': '', 'checkpoint_id': '1ef7d06e-859f-6206-8003-e1bd3c264b8f'}}, tasks=())
-
 ```
 
 ```python
 snapshot.next
 # (since the graph ended this turn, `next` is empty. If you fetch a state from within a graph invocation, next tells which node will execute next)
-# (このターンでグラフが終了したため、`next`は空です。グラフの実行中に状態のsnapshotを取得すると、次に実行されるノードがわかります)
+# (このターンでグラフが終了したため、`next`は空です。グラフの実行中にstateのsnapshotを取得すると、次に実行されるノードがわかります)
 ```
 
 ```
@@ -851,23 +846,13 @@ I'm learning LangGraph. Could you do some research on it for me?
 ==================================[1m Ai Message [0m==================================
 [{'text': "Certainly! I'd be happy to research LangGraph for you. To get the most up-to-date and comprehensive information, I'll use the Tavily search engine to look this up. Let me do that for you now.", 'type': 'text'}, {'id': 'toolu_01R4ZFcb5hohpiVZwr88Bxhc', 'input': {'query': 'LangGraph framework for building language model applications'}, 'name': 'tavily_search_results_json', 'type': 'tool_use'}]
 
-```
-
-```
-
 Tool Calls:
 tavily_search_results_json (toolu_01R4ZFcb5hohpiVZwr88Bxhc)
 Call ID: toolu_01R4ZFcb5hohpiVZwr88Bxhc
 Args: query: LangGraph framework for building language model applications
 
-```
-
-```python
 snapshot = graph.get_state(config)
 snapshot.next
-```
-
-```
 ('tools',)
 ```
 
@@ -1073,16 +1058,11 @@ snapshot = graph.get_state(config)
 existing_message = snapshot.values["messages"][-1]
 existing_message.pretty_print()
 
-```
-
-```
-
-==================================[1m Ai Message [0m==================================
-[{'text': "Certainly! I'd be happy to research LangGraph for you. To get the most up-to-date and comprehensive information, I'll use the Tavily search engine to look this up. Let me do that for you now.", 'type': 'text'}, {'id': 'toolu_018YcbFR37CG8RRXnavH5fxZ', 'input': {'query': 'LangGraph: what is it, how is it used in AI development'}, 'name': 'tavily_search_results_json', 'type': 'tool_use'}]
-Tool Calls: tavily_search_results_json (toolu_018YcbFR37CG8RRXnavH5fxZ)
-Call ID: toolu_018YcbFR37CG8RRXnavH5fxZ
-Args: query: LangGraph: what is it, how is it used in AI development
-
+# ==================================[1m Ai Message [0m==================================
+# [{'text': "Certainly! I'd be happy to research LangGraph for you. To get the most up-to-date and comprehensive information, I'll use the Tavily search engine to look this up. Let me do that for you now.", 'type': 'text'}, {'id': 'toolu_018YcbFR37CG8RRXnavH5fxZ', 'input': {'query': 'LangGraph: what is it, how is it used in AI development'}, 'name': 'tavily_search_results_json', 'type': 'tool_use'}]
+# Tool Calls: tavily_search_results_json (toolu_018YcbFR37CG8RRXnavH5fxZ)
+# Call ID: toolu_018YcbFR37CG8RRXnavH5fxZ
+# Args: query: LangGraph: what is it, how is it used in AI development
 ```
 
 But what if the user wants to intercede?
@@ -1426,7 +1406,6 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]  
-    # This flag is new
     ask_human: bool
 ```
 
@@ -1478,12 +1457,10 @@ def chatbot(state: State):
 Next, create the graph builder and add the chatbot and tools nodes to the graph, same as before.
 次に、グラフビルダーを作成し、チャットボットとツールノードをグラフに追加します。以前と同様です。
 
-```
-
+```python
 graph_builder = StateGraph(State)
 graph_builder.add_node("chatbot", chatbot)
 graph_builder.add_node("tools", ToolNode(tools=[tool]))
-
 ```
 
 Next, create the "human" node.
@@ -2083,7 +2060,6 @@ Notice that the checkpoint's config (to_replay.config) contains a checkpoint_id 
 
 ```python
 # The `checkpoint_id` in the `to_replay.config` corresponds to a state we've persisted to our checkpointer
-
 for event in graph.stream(None, to_replay.config, stream_mode="values"):
     if "messages" in event:
         event["messages"][-1].pretty_print()
@@ -2173,7 +2149,7 @@ Take your journey further by exploring deployment and advanced features:
 ### LangGraph Platform¶ LangGraphプラットフォーム
 
 Expand your knowledge with these resources:
-これらのリソースで知識を広げましょう：
+これらのリソースで知識を広げましょう:
 
 - LangGraph Platform Concepts: Understand the foundational concepts of the LangGraph Platform.
   - LangGraph Platformの概念：LangGraph Platformの基本的な概念を理解します。
