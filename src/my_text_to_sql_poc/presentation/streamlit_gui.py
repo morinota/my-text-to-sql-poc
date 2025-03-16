@@ -15,7 +15,7 @@ with st.container():
     )
     sql_dialect = st.selectbox("SQL方言を選択してください:", ["Redshift", "Snowflake", "PostgreSQL", "MySQL", "SQLite"])
 
-facade = Text2SQLFacade()
+text2sql_facade = Text2SQLFacade()
 
 generated_sql = st.empty()
 
@@ -23,7 +23,7 @@ generated_sql = st.empty()
 with st.container():
     if st.button("SQLクエリを生成"):
         try:
-            related_metadata_by_table = facade.retrieve_related_tables(user_query, k=20)
+            related_metadata_by_table = text2sql_facade.retrieve_related_tables(user_query, k=20)
             st.success(
                 f"あなたの質問に活用できそうなテーブルが取得されました: {', '.join(list(related_metadata_by_table.keys())[0:3])}, ..."
             )
@@ -33,7 +33,7 @@ with st.container():
                     st.write(f"テーブル名: {table_name}")
                     st.text_area("テーブルメタデータ", metadata, height=200)
 
-            related_sql_by_query_name = facade.retrieve_related_sample_queries(user_query, k=10)
+            related_sql_by_query_name = text2sql_facade.retrieve_related_sample_queries(user_query, k=10)
             st.success(
                 f"あなたの質問の参考になりそうなサンプルクエリが取得されました: {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ..."
             )
@@ -43,7 +43,7 @@ with st.container():
                     st.write(f"クエリ名: {query_name}")
                     st.code(sql, language="sql", wrap_lines=True)
 
-            sql_query = facade.text2sql(
+            sql_query = text2sql_facade.text2sql(
                 user_query,
                 sql_dialect,
                 tables_metadata="\n\n".join(related_metadata_by_table.values()),
