@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import duckdb
-import typer
 from langchain_community.docstore.document import Document
 from langchain_community.vectorstores import DuckDB
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -12,15 +11,13 @@ from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
 
-app = typer.Typer(pretty_exceptions_enable=False)  # Typerアプリケーションのインスタンスを作成
-
 PROMPT_CONFIG = OmegaConf.load("prompts/generate_sql_prompt_ver2_jp.yaml")
 
 
 # 出力データのフォーマットを設定
 class OutputFormat(BaseModel):
     query: str = Field(
-        description="生成されたSQLクエリ。コマンドは大文字ではなく小文字で書くこと。可読性を重視して改行すること。CTEの名前はアンダースコアから始めること"
+        description="生成されたSQLクエリ。コマンドは大文字ではなく小文字で書くこと。可読性を重視して改行すること。CTEの名前はアンダースコアから始めること。可読性を重視して細かくコメントによる説明を挟むこと。"
     )
     explanation: str = Field(description="生成されたSQLクエリに関する説明文")
 
@@ -62,8 +59,8 @@ class Text2SQLFacade:
         logger.info(f"Retrieved sample queries: {related_sql_by_query_name.keys()}")
 
         # Generate SQL query and explanation
-        sql_query, explanation = self.text2sql(question, dialect, tables_metadata, related_sample_queries)
-        return sql_query, explanation
+        sql_query = self.text2sql(question, dialect, tables_metadata, related_sample_queries)
+        return sql_query, ""
 
     def retrieve_related_tables(self, question: str, k: int = 20) -> dict[str, str]:
         """質問に関連するテーブルをretrieveして返す
@@ -79,7 +76,7 @@ class Text2SQLFacade:
 
     def retrieve_related_sample_queries(self, question: str, k: int = 20) -> dict[str, str]:
         """質問に関連するサンプルクエリをretrieveして返す
-        返り値dictの key はクエリ名、value はクエリの内容
+        返り値dictの key はサンプルクエリ名、value はサンプルクエリの内容
         """
         retrieved_query_names = [
             Path(doc.metadata["source"]).stem
@@ -90,25 +87,20 @@ class Text2SQLFacade:
         return related_sample_queries
 
     def text2sql(
-        self, question: str, dialect: str, tables_metadata: str, related_sample_queries: str
-    ) -> tuple[str, str]:
-        """テキストからSQLクエリを生成する"""
-
-        generated_sql_query, explanation = self._generate_sql_query(
+        self,
+        question: str,
+        dialect: str,
+        tables_metadata: str,
+        related_sample_queries: str,
+    ) -> str:
+        """質問文からSQLクエリを生成する"""
+        generated_sql_query = self._generate_sql_query(
             dialect=dialect,
             question=question,
             tables_metadata=tables_metadata,
             related_sample_queries=related_sample_queries,
         )
-        return generated_sql_query, explanation
-        # return self._output_guardrails(
-        #     question=question,
-        #     dialect=dialect,
-        #     tables_metadata=tables_metadata,
-        #     related_sample_queries=related_sample_queries,
-        #     generated_sql_query=generated_sql_query,
-        #     explanation=explanation,
-        # )
+        return generated_sql_query
 
     def _retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list[Document]:
         """ベクトルストアを読み込み、質問に関連するドキュメントをretrieveする"""
@@ -125,9 +117,11 @@ class Text2SQLFacade:
         for table_name in table_names:
             file_path = self.table_metadata_dir / f"{table_name}.txt"
             if table_name not in available_tables or not file_path.exists():
-                raise FileNotFoundError(
-                    f"Schema file not found for table: {table_name}\n Available tables: {available_tables}"
-                )
+                # raise FileNotFoundError(
+                #     f"Schema file not found for table: {table_name}\n Available tables: {available_tables}"
+                # )
+                logger.warning(f"Schema file not found for table: {table_name}\n Available tables: {available_tables}")
+                continue
             with file_path.open("r") as file:
                 table_data = file.read()
                 metadata_by_table[table_name] = table_data
@@ -151,7 +145,7 @@ class Text2SQLFacade:
 
     def _generate_sql_query(
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str
-    ) -> tuple[str, str]:
+    ) -> str:
         prompt_template_str = self.GENERATER_PROMPT_TEMPLATE.read_text()
 
         prompt_template = PromptTemplate(
@@ -167,7 +161,7 @@ class Text2SQLFacade:
         )
         response = self.model_gateway.generate_response_with_structured_output(prompt, OutputFormat)
 
-        return response.query, response.explanation
+        return response.query
 
     def _output_guardrails(
         self,
@@ -177,7 +171,7 @@ class Text2SQLFacade:
         related_sample_queries: str,
         generated_sql_query: str,
         explanation: str,
-    ) -> tuple[str, str]:
+    ) -> str:
         """生成されたSQLクエリに対するガードレールを適用して返す"""
         reviewer_prompt = self.reviewer_prompt_template.format(
             question=question,
@@ -191,4 +185,4 @@ class Text2SQLFacade:
         # reviewが生成したクエリをレビューして、問題があれば修正する
         reviewed_output = self.model_gateway.generate_response_with_structured_output(reviewer_prompt, OutputFormat)
 
-        return reviewed_output.query, reviewed_output.explanation
+        return reviewed_output.query
