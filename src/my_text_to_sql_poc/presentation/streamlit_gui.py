@@ -48,15 +48,13 @@ if st.button("SQLクエリを生成"):
                 st.code(sql, language="sql", wrap_lines=True)
 
         ## SQLクエリ生成
-        sql_query, explanation = facade.text2sql(
+        sql_query = facade.text2sql(
             user_query,
             sql_dialect,
             tables_metadata="\n\n".join(related_metadata_by_table.values()),
             related_sample_queries="\n\n".join(related_sql_by_query_name.values()),
         )
         st.success("SQLクエリが生成されました")
-        if explanation:
-            st.text_area("説明:", explanation, height=150)
 
         # バックスラッシュを二重にエスケープ
         escaped_sql_query = sql_query.replace("\\", "\\\\")
