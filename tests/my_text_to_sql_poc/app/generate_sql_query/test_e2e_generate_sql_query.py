@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from my_text_to_sql_poc.app.generate_sql_query.__main__ import app
+from my_text_to_sql_poc.app.text2sql.text2sql_facade import app
 
 runner = CliRunner()
 
