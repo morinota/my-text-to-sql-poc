@@ -22,21 +22,31 @@ export OPENAI_API_KEY="your_openai_api_key_here"
 
 ### 1.3.1. 自動でテーブルメタデータを生成するオフラインのバッチジョブを実行
 
-全更新
+全更新 (すでにテーブルメタデータがある場合は、上書きされます)
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
-        --audit-log-path data/redshift_audit_log.csv \
-        --table-metadata-dir data/table_metadata \
-        --full-refresh
+    --sample-queries-dir data/sample_queries \
+    --table-metadata-dir data/table_metadata \
+    --full-refresh \
+    --target-tables for_analysis_kikuchi_subscribe_all_list_comp_with_full_data \
+    --target-tables allocation_settings \
+    --target-tables tap_article_events \
+    --target-tables show_article_events \
+    --target-tables dynamodb.news
 ```
 
-差分更新
+差分更新 (すでにテーブルメタデータがある場合は、スキップされます)
 
 ```bash
 poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
-        --audit-log-path data/redshift_audit_log.csv \
-        --table-metadata-dir data/table_metadata
+    --sample-queries-dir data/sample_queries \
+    --table-metadata-dir data/table_metadata \
+    --target-tables for_analysis_kikuchi_subscribe_all_list_comp_with_full_data \
+    --target-tables allocation_settings \
+    --target-tables tap_article_events \
+    --target-tables show_article_events \
+    --target-tables dynamodb.news
 ```
 
 ### 1.3.2. 　テーブルメタデータとサンプルクエリファイルを要約するオフラインバッチの実行
