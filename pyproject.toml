@@ -24,6 +24,14 @@ pandas = "^2.2.3"
 tiktoken = "^0.8.0"
 streamlit = "^1.40.1"
 polars = "^1.13.1"
+snowflake-connector-python = "^3.12.3"
+langgraph = "^0.2.53"
+duckduckgo-search = "^6.3.7"
+langsmith = "^0.1.147"
+ipython = "^8.30.0"
+matplotlib = "^3.9.3"
+duckdb-engine = "^0.14.2"
+langchain-experimental = "^0.3.4"
 
 
 [tool.poetry.group.dev.dependencies]
