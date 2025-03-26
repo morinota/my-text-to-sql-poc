@@ -92,15 +92,15 @@ class Text2SQLFacade:
         dialect: str,
         tables_metadata: str,
         related_sample_queries: str,
-    ) -> str:
+    ) -> tuple[str, str]:
         """質問文からSQLクエリを生成する"""
-        generated_sql_query = self._generate_sql_query(
+        text2sql_output = self._generate_sql_query(
             dialect=dialect,
             question=question,
             tables_metadata=tables_metadata,
             related_sample_queries=related_sample_queries,
         )
-        return generated_sql_query
+        return text2sql_output.query, text2sql_output.explanation
 
     def _retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list[Document]:
         """ベクトルストアを読み込み、質問に関連するドキュメントをretrieveする"""
@@ -145,7 +145,8 @@ class Text2SQLFacade:
 
     def _generate_sql_query(
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str
-    ) -> str:
+    ) -> OutputFormat:
+        """質問文からSQLクエリを生成する"""
         prompt_template_str = self.GENERATER_PROMPT_TEMPLATE.read_text()
 
         prompt_template = PromptTemplate(
@@ -159,9 +160,10 @@ class Text2SQLFacade:
             question=question,
             related_sample_queries=related_sample_queries,
         )
-        response = self.model_gateway.generate_response_with_structured_output(prompt, OutputFormat)
-
-        return response.query
+        return self.model_gateway.generate_response_with_structured_output(
+            prompt,
+            OutputFormat,
+        )
 
     def _output_guardrails(
         self,
