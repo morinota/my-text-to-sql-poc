@@ -75,45 +75,6 @@ if user_msg:
 
     st.session_state["chat_history"].append({"role": "assistant", "content": "SQLクエリを生成中..."})
 
-
-# # ユーザの入力に基づいて生成されたSQLクエリを表示する欄
-# with st.container():
-#     if st.button("SQLクエリを生成"):
-#         try:
-#             related_metadata_by_table = text2sql_facade.retrieve_related_tables(user_msg, k=20)
-#             st.success(
-#                 f"あなたの質問に活用できそうなテーブルが取得されました: {', '.join(list(related_metadata_by_table.keys())[0:3])}, ..."
-#             )
-
-#             with st.expander("取得されたテーブルの詳細を見る"):
-#                 for table_name, metadata in related_metadata_by_table.items():
-#                     st.write(f"テーブル名: {table_name}")
-#                     st.text_area("テーブルメタデータ", metadata, height=200)
-
-#             related_sql_by_query_name = text2sql_facade.retrieve_related_sample_queries(user_query, k=10)
-#             st.success(
-#                 f"あなたの質問の参考になりそうなサンプルクエリが取得されました: {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ..."
-#             )
-
-#             with st.expander("取得されたサンプルクエリの詳細を見る"):
-#                 for query_name, sql in related_sql_by_query_name.items():
-#                     st.write(f"クエリ名: {query_name}")
-#                     st.code(sql, language="sql", wrap_lines=True)
-
-#             sql_query = text2sql_facade.text2sql(
-#                 user_query,
-#                 sql_dialect,
-#                 tables_metadata="\n\n".join(related_metadata_by_table.values()),
-#                 related_sample_queries="\n\n".join(related_sql_by_query_name.values()),
-#             )
-#             st.success("SQLクエリが生成されました")
-
-#             escaped_sql_query = sql_query.replace("\\", "\\\\")
-#             st.code(escaped_sql_query, language="sql", line_numbers=True)
-
-#         except Exception as e:
-#             st.error(f"SQLクエリの生成に失敗しました: {e}")
-
 # st.subheader("オフラインバッチ実行")
 
 # # オフラインバッチの検索インデックス登録の実行ボタン (これは表示させない方が良いかも)
