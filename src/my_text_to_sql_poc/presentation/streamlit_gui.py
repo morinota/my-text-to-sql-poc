@@ -12,84 +12,68 @@ if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
 
-def display_chat_history():
-    """チャット履歴を表示"""
-    for chat in st.session_state["chat_history"]:
-        if chat["role"] == "user":
-            st.markdown(
-                # 背景をグレーにして、角を丸くし、文字の色を黒にする
-                f'<div style="background-color: #f0f0f0; border-radius: 10px; padding: 10px; color: black;">'
-                f"You: {chat['content']}"
-                '</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                # 背景を青にして、角を丸くし、文字の色を黒にする
-                f'<div style="background-color: #cfe2ff; border-radius: 10px; padding: 10px; color: black;">'
-                f"チャットボット: {chat['content']}"
-                '</div>',
-                unsafe_allow_html=True,
-            )
-
-
-# チャット履歴を表示
-display_chat_history()
-
 text2sql_facade = Text2SQLFacade()
 
+# 💬 過去のチャット履歴を表示（新しい方は下に）
+for msg in st.session_state.chat_history:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 user_msg = st.chat_input("自然言語の質問や修正指示を入力してください(例: 顧客ごとの売上を取得したい)")
 
 
-# 会話を表示するコンテナ
-with st.container():
-    if user_msg:
-        # ユーザの入力を会話履歴に追加
-        st.session_state["chat_history"].append({"role": "user", "content": user_msg})
+if user_msg:
+    # ユーザの入力を会話履歴に追加
+    st.session_state["chat_history"].append({"role": "user", "content": user_msg})
+    with st.chat_message("user"):
+        st.write(user_msg)
 
-        # 関連するテーブルをretrieve
-        st.session_state["chat_history"].append({"role": "assistant", "content": "関連するテーブルを検索中..."})
-        related_metadata_by_table = text2sql_facade.retrieve_related_tables(user_msg, k=20)
-        st.session_state["chat_history"].append(
-            {
-                "role": "assistant",
-                "content": f"関連するテーブルを取得しました: {', '.join(list(related_metadata_by_table.keys())[0:3])}, ...",
-            }
-        )
+    # 関連するテーブルをretrieve
+    related_metadata_by_table = text2sql_facade.retrieve_related_tables(user_msg, k=20)
+    with st.chat_message("assistant"):
+        st.markdown(f"関連するテーブルを取得しました! {', '.join(list(related_metadata_by_table.keys())[0:3])}, ...")
+        with st.expander("取得されたテーブルの詳細を見る"):
+            for table_name, metadata in related_metadata_by_table.items():
+                st.write(f"テーブル名: {table_name}")
+                st.text_area("テーブルメタデータ", metadata, height=200)
+    st.session_state["chat_history"].append(
+        {
+            "role": "assistant",
+            "content": f"関連するテーブルを取得しました: {', '.join(list(related_metadata_by_table.keys())[0:3])}, ...",
+        }
+    )
 
-        # 関連するサンプルクエリをretrieve
-        st.session_state["chat_history"].append({"role": "assistant", "content": "関連するサンプルクエリを検索中..."})
-        related_sql_by_query_name = text2sql_facade.retrieve_related_sample_queries(user_msg, k=10)
-        st.session_state["chat_history"].append(
-            {
-                "role": "assistant",
-                "content": f"関連するサンプルクエリが取得されました: {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ...",
-            }
+    # 関連するサンプルクエリをretrieve
+    related_sql_by_query_name = text2sql_facade.retrieve_related_sample_queries(user_msg, k=10)
+    with st.chat_message("assistant"):
+        st.markdown(
+            f"関連するサンプルクエリを取得しました! {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ..."
         )
+        with st.expander("取得されたサンプルクエリの詳細を見る"):
+            for query_name, sql in related_sql_by_query_name.items():
+                st.write(f"クエリ名: {query_name}")
+                st.code(sql, language="sql", wrap_lines=True)
 
-        # SQLクエリを生成
-        st.session_state["chat_history"].append({"role": "assistant", "content": "SQLクエリを生成中..."})
-        sql_query, explanation = text2sql_facade.text2sql(
-            user_msg,
-            sql_dialect,
-            tables_metadata="\n\n".join(related_metadata_by_table.values()),
-            related_sample_queries="\n\n".join(related_sql_by_query_name.values()),
-        )
-        st.session_state["chat_history"].append(
-            {
-                "role": "assistant",
-                "content": f"""
-            SQLクエリが生成されました! 以下に表示します:
-             
-            ```sql
-            {sql_query}
-            ```
+    st.session_state["chat_history"].append(
+        {
+            "role": "assistant",
+            "content": f"関連するサンプルクエリが取得されました: {', '.join(list(related_sql_by_query_name.keys())[0:3])}, ...",
+        }
+    )
 
-            {explanation}
-            """,
-            }
-        )
+    # SQLクエリを生成
+    sql_query, explanation = text2sql_facade.text2sql(
+        user_msg,
+        sql_dialect,
+        tables_metadata="\n\n".join(related_metadata_by_table.values()),
+        related_sample_queries="\n\n".join(related_sql_by_query_name.values()),
+    )
+    with st.chat_message("assistant"):
+        st.markdown("SQLクエリを生成しました!")
+        st.code(sql_query, language="sql", line_numbers=True)
+        st.markdown(f"{explanation}")
+
+    st.session_state["chat_history"].append({"role": "assistant", "content": "SQLクエリを生成中..."})
 
 
 # # ユーザの入力に基づいて生成されたSQLクエリを表示する欄
