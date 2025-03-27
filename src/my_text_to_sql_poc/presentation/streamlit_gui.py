@@ -2,7 +2,7 @@ import streamlit as st
 
 from my_text_to_sql_poc.app.text2sql.text2sql_facade import Text2SQLFacade
 
-st.title("Text-to-SQL Generator")
+st.title("Text-to-SQL Assistant")
 
 sql_dialect = st.selectbox("SQL方言を選択してください:", ["Redshift", "Snowflake", "PostgreSQL", "MySQL", "SQLite"])
 
