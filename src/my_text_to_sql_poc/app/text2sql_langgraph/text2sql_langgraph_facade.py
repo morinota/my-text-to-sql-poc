@@ -2,7 +2,7 @@ from typing import Annotated, Any, Literal
 
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.utilities import SQLDatabase
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig, RunnableLambda, RunnableWithFallbacks
 from langchain_core.tools import tool
@@ -84,10 +84,29 @@ def node_2(state: OverallState, config: RunnableConfig) -> OverallState:
         sql_query=generated_query,
         explanation=generated_explanation,
         messages=[
-            HumanMessage(f"{prompt}"),
+            SystemMessage(f"{prompt}"),
             AIMessage(f"generated query: {generated_query}, explanation: {generated_explanation}"),
         ],
     )
+
+
+graph_builder = StateGraph(OverallState)
+graph_builder.add_node(node_1)
+graph_builder.add_node(node_2)
+graph_builder.set_entry_point("node_1")
+graph_builder.add_edge("node_1", "node_2")
+
+memory = MemorySaver()
+# グラフを実行
+graph = graph_builder.compile(checkpointer=memory)
+
+config = {"configurable": {"thread_id": "1"}}
+print(
+    graph.invoke(
+        InputState(messages=[HumanMessage("アルバムの収益ランキングは?")]),
+        config=config,
+    )
+)
 
 
 class Text2SQLGraphFacade:
@@ -227,16 +246,7 @@ class Text2SQLGraphFacade:
 
 
 if __name__ == "__main__":
-    graph_builder = StateGraph(OverallState)
-    graph_builder.add_node(node_1)
-    graph_builder.add_node(node_2)
-    graph_builder.set_entry_point("node_1")
-    graph_builder.add_edge("node_1", "node_2")
-
-    # グラフを実行
-    graph = graph_builder.compile()
-    print(graph.invoke(InputState(messages=[HumanMessage("アルバムの収益ランキングは?")])))
-
+    pass
     # # グラフビルダーに、定義したノード達を追加していく
     # ## 最初に必ず呼び出されるノード
     # graph_builder.add_node("first_tool_call", first_tool_call)
