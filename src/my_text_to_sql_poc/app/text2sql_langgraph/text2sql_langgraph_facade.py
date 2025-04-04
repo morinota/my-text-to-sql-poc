@@ -101,19 +101,43 @@ memory = MemorySaver()
 graph = graph_builder.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "1"}}
-print(
-    graph.invoke(
-        InputState(messages=[HumanMessage("アルバムの収益ランキングは?")]),
-        config=config,
-    )
-)
+initial_input_state = InputState(messages=[HumanMessage("アルバムの収益ランキングは?")])
+# print(
+#     graph.invoke(
+#         initial_input_state,
+#         config=config,
+#     )
+# )
 
 
 class Text2SQLGraphFacade:
     def __init__(self) -> None:
-        graph_builder = StateGraph(OverallState)
+        self.graph_builder = StateGraph(OverallState)
+        self.graph_builder.add_node(node_1)
+        self.graph_builder.add_node(node_2)
+        self.graph_builder.set_entry_point("node_1")
+        self.graph_builder.add_edge("node_1", "node_2")
+        self.memory = MemorySaver()
+        self.graph = self.graph_builder.compile(checkpointer=self.memory)
+        self.config = {"configurable": {"thread_id": "1"}}
 
-        # グラフビルダーに、定義したノード達を追加していく
+    def stream_response(self, user_input: str) -> dict:
+        initial_input_state = InputState(messages=[HumanMessage(user_input)])
+        # グラフを実行
+        for step_output in self.graph.stream(
+            initial_input_state,
+            config=self.config,
+            stream_mode="values",
+        ):
+            print("***************")
+            print(f"{type(step_output)=}")
+            yield step_output
+
+
+facade = Text2SQLGraphFacade()
+for responce in facade.stream_response("アルバムの収益ランキングは?"):
+    print("---------")
+    print(responce)
 
 
 # # pre-buildのtool関数達を取得
