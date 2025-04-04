@@ -109,8 +109,6 @@ class Text2SQLGraphFacade:
             config=self.config,
             stream_mode="values",
         ):
-            print("***************")
-            print(f"{type(step_output)=}")
             yield step_output
 
 
