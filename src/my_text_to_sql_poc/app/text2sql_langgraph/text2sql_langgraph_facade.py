@@ -90,26 +90,6 @@ def node_2(state: OverallState, config: RunnableConfig) -> OverallState:
     )
 
 
-graph_builder = StateGraph(OverallState)
-graph_builder.add_node(node_1)
-graph_builder.add_node(node_2)
-graph_builder.set_entry_point("node_1")
-graph_builder.add_edge("node_1", "node_2")
-
-memory = MemorySaver()
-# グラフを実行
-graph = graph_builder.compile(checkpointer=memory)
-
-config = {"configurable": {"thread_id": "1"}}
-initial_input_state = InputState(messages=[HumanMessage("アルバムの収益ランキングは?")])
-# print(
-#     graph.invoke(
-#         initial_input_state,
-#         config=config,
-#     )
-# )
-
-
 class Text2SQLGraphFacade:
     def __init__(self) -> None:
         self.graph_builder = StateGraph(OverallState)
