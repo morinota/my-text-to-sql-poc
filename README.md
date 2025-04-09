@@ -4,10 +4,11 @@
 
 ## 1.1. 依存関係のインストール
 
-まず、Poetryを使って必要な依存関係をインストールします。
+まず、uvを使って必要な依存関係をインストールします。
 
 ```bash
-poetry install
+brew install uv
+uv sync
 ```
 
 ## 1.2. 環境変数の設定
@@ -25,7 +26,7 @@ export OPENAI_API_KEY="your_openai_api_key_here"
 全更新 (すでにテーブルメタデータがある場合は、上書きされます)
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+uv run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
     --sample-queries-dir data/sample_queries \
     --table-metadata-dir data/table_metadata \
     --full-refresh \
@@ -39,7 +40,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
 差分更新 (すでにテーブルメタデータがある場合は、スキップされます)
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
+uv run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
     --sample-queries-dir data/sample_queries \
     --table-metadata-dir data/table_metadata \
     --target-tables for_analysis_kikuchi_subscribe_all_list_comp_with_full_data \
@@ -54,7 +55,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_table_metadata_batch \
 差分更新
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
+uv run python -m my_text_to_sql_poc.app.generate_summary_batch \
     --table-metadata-dir data/table_metadata \
     --sample-queries-dir data/sample_queries \
     --output-table-summary-dir data/summarized_table \
@@ -64,7 +65,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
 全更新
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
+uv run python -m my_text_to_sql_poc.app.generate_summary_batch \
     --table-metadata-dir data/table_metadata \
     --sample-queries-dir data/sample_queries \
     --output-table-summary-dir data/summarized_table \
@@ -75,7 +76,7 @@ poetry run python -m my_text_to_sql_poc.app.generate_summary_batch \
 ### 1.3.3. テーブル要約とクエリ要約を埋め込み表現に変換して、ベクトルストアに保存するオフラインバッチの実行
 
 ```bash
-poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
+uv run python -m my_text_to_sql_poc.app.embed_summaries_batch \
     --table-summary-dir data/summarized_table \
     --query-summary-dir data/summarized_sample_query \
     --vectorstore-file sample_vectorstore.duckdb
@@ -84,7 +85,7 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 ### 1.3.4. Text2SQLアプリケーションの実行
 
 ```bash
-% poetry run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
+uv run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
     --question "2023年の売上合計を知りたい" \
     --dialect SQLite \
     --log-level INFO
@@ -93,5 +94,5 @@ poetry run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 ### 1.3.5. GUIアプリケーションの起動
 
 ```bash
-poetry run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
+uv run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
 ```
