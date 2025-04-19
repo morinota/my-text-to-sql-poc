@@ -15,6 +15,8 @@ from my_text_to_sql_poc.service.repository import (
     SampleQueryRepositoryInterface,
     TableMetadataRepository,
     TableMetadataRepositoryInterface,
+    VectorStoreRepository,
+    VectorStoreRepositoryInterface,
 )
 
 PROMPT_CONFIG = OmegaConf.load("src/my_text_to_sql_poc/app/text2sql/generate_sql_prompt_ver2_jp.yaml")
@@ -34,13 +36,11 @@ class Text2SQLFacade:
 
     def __init__(
         self,
-        vector_db_path: str = "sample_vectorstore.duckdb",
-        model_name: str = "text-embedding-3-small",
+        vector_store_repo: VectorStoreRepositoryInterface = VectorStoreRepository(),
         table_metadata_repo: TableMetadataRepositoryInterface = TableMetadataRepository(),
         sample_query_repo: SampleQueryRepositoryInterface = SampleQueryRepository(),
     ):
-        self.vector_db_path = vector_db_path
-        self.model_name = model_name
+        self.vector_store_repo = vector_store_repo
         self.table_metadata_repo = table_metadata_repo
         self.sample_query_repo = sample_query_repo
         self.model_gateway = ModelGateway()
@@ -65,8 +65,8 @@ class Text2SQLFacade:
         logger.info(f"Retrieved sample queries: {related_sql_by_query_name.keys()}")
 
         # Generate SQL query and explanation
-        sql_query = self.text2sql(question, dialect, tables_metadata, related_sample_queries)
-        return sql_query, ""
+        sql_query, explanation = self.text2sql(question, dialect, tables_metadata, related_sample_queries)
+        return sql_query, explanation
 
     def retrieve_related_tables(self, question: str, k: int = 20) -> dict[str, str]:
         """質問に関連するテーブルをretrieveして返す
@@ -74,7 +74,7 @@ class Text2SQLFacade:
         """
         retrieved_table_names = [
             Path(doc.metadata["source"]).stem
-            for doc in self._retrieve_relevant_docs(question, table_name="table_embeddings", k=k)
+            for doc in self.vector_store_repo.retrieve_relevant_docs(question, table_name="table_embeddings", k=k)
         ]
         return self.table_metadata_repo.get(retrieved_table_names)
 
@@ -84,7 +84,7 @@ class Text2SQLFacade:
         """
         retrieved_query_names = [
             Path(doc.metadata["source"]).stem
-            for doc in self._retrieve_relevant_docs(question, table_name="query_embeddings", k=k)
+            for doc in self.vector_store_repo.retrieve_relevant_docs(question, table_name="query_embeddings", k=k)
         ]
         return self.sample_query_repo.get(retrieved_query_names)
 
@@ -103,13 +103,6 @@ class Text2SQLFacade:
             related_sample_queries=related_sample_queries,
         )
         return text2sql_output.query, text2sql_output.explanation
-
-    def _retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list[Document]:
-        """ベクトルストアを読み込み、質問に関連するドキュメントをretrieveする"""
-        embeddings = OpenAIEmbeddings(model=self.model_name)
-        conn = duckdb.connect(database=self.vector_db_path)
-        vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
-        return vectorstore.similarity_search(question, k=k)
 
     def _generate_sql_query(
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str

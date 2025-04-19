@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import duckdb
+from langchain_community.vectorstores import DuckDB
+from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
 
@@ -85,3 +88,25 @@ class SampleQueryRepository(SampleQueryRepositoryInterface):
         file_path = self.query_dir / f"{query_name}.sql"
         with file_path.open("w") as file:
             file.write(query)
+
+
+class VectorStoreRepositoryInterface(ABC):
+    @abstractmethod
+    def retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list:
+        pass
+
+
+class VectorStoreRepository(VectorStoreRepositoryInterface):
+    def __init__(
+        self,
+        vector_db_path: str = "sample_vectorstore.duckdb",
+        model_name: str = "text-embedding-3-small",
+    ) -> None:
+        self.vector_db_path = vector_db_path
+        self.model_name = model_name
+
+    def retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list:
+        embeddings = OpenAIEmbeddings(model=self.model_name)
+        conn = duckdb.connect(database=self.vector_db_path)
+        vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
+        return vectorstore.similarity_search(question, k=k)
