@@ -96,3 +96,52 @@ uv run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
 ```bash
 uv run streamlit run src/my_text_to_sql_poc/presentation/streamlit_gui.py
 ```
+
+### 1.3.6. DockerコンテナでText2SQL MCPサーバーを起動
+
+以下の手順でDockerコンテナを使用してText2SQL MCPサーバーを起動できます。
+
+1. Dockerイメージをビルドしておく。
+
+```bash
+cd path/to/my-text-to-sql-poc
+docker build -t text2sql-mcp .
+```
+
+2. 環境変数 `OPENAI_API_KEY` を設定しておく(OpenAIの埋め込みモデルを利用するため。すでに設定済みの場合は不要)。
+
+```bash
+export OPENAI_API_KEY="your_openai_api_key_here"
+```
+
+3. settings.jsonに必要な設定を追加します。
+
+```json
+"mcp": {
+        "inputs": [],
+        "servers": {
+            // MCPサーバー名は任意の名前でOK
+            "text2sql-docker-mcp-server": {
+                "command": "docker",
+                "args": [
+                    "run",
+                    "-i",
+                    "-e",
+                    "OPENAI_API_KEY",
+                    "text2sql-mcp"
+                ],
+                "env": {}
+            }
+        }
+    }
+```
+
+4. VSCodeのコマンドパレットやGUIなどから、startを実行して、MCPサーバーを起動します。
+5. これでGihub Copilot Agentが、Text2SQL MCPサーバーを利用できるようになるはずです。
+
+試しに、以下のような質問を投げてみてください。これでツール呼んでくれなかったらまた教えてください。
+
+```text
+#sym:text2sql-docker-mcp-server 各コンテンツ経由の課金獲得数を集計するSQLクエリ書いて!
+```
+
