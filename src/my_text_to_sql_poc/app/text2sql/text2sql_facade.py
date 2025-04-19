@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
 
-PROMPT_CONFIG = OmegaConf.load("prompts/generate_sql_prompt_ver2_jp.yaml")
+PROMPT_CONFIG = OmegaConf.load("src/my_text_to_sql_poc/app/text2sql/generate_sql_prompt_ver2_jp.yaml")
 
 
 # 出力データのフォーマットを設定
@@ -23,8 +23,8 @@ class OutputFormat(BaseModel):
 
 
 class Text2SQLFacade:
-    GENERATER_PROMPT_TEMPLATE = Path("prompts/generate_sql_prompt_ver2_jp.txt")
-    REVIEWER_PROMPT_TEMPLATE = Path("prompts/generate_sql_prompt_ver2_jp.yaml")
+    GENERATER_PROMPT_TEMPLATE = Path("src/my_text_to_sql_poc/app/text2sql/generate_sql_prompt_ver2_jp.txt")
+    REVIEWER_PROMPT_TEMPLATE = Path("src/my_text_to_sql_poc/app/text2sql/generate_sql_prompt_ver2_jp.yaml")
 
     def __init__(
         self,
