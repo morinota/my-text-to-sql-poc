@@ -25,7 +25,7 @@ class SampleQueryRepositoryInterface(ABC):
 
 
 class TableMetadataRepository(TableMetadataRepositoryInterface):
-    def __init__(self, metadata_dir: Path):
+    def __init__(self, metadata_dir: Path = Path("data/table_metadata/")) -> None:
         self.metadata_dir = metadata_dir
 
     def get(self, table_names: list[str]) -> dict[str, str]:
@@ -49,7 +49,7 @@ class TableMetadataRepository(TableMetadataRepositoryInterface):
 
 
 class SampleQueryRepository(SampleQueryRepositoryInterface):
-    def __init__(self, query_dir: Path):
+    def __init__(self, query_dir: Path = Path("data/sample_queries/")) -> None:
         self.query_dir = query_dir
 
     def get(self, query_names: list[str]) -> dict[str, str]:

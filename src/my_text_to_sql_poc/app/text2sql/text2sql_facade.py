@@ -36,12 +36,8 @@ class Text2SQLFacade:
         self,
         vector_db_path: str = "sample_vectorstore.duckdb",
         model_name: str = "text-embedding-3-small",
-        table_metadata_repo: TableMetadataRepositoryInterface = TableMetadataRepository(
-            metadata_dir=Path("data/table_metadata/"),
-        ),
-        sample_query_repo: SampleQueryRepositoryInterface = SampleQueryRepository(
-            query_dir=Path("data/sample_queries/"),
-        ),
+        table_metadata_repo: TableMetadataRepositoryInterface = TableMetadataRepository(),
+        sample_query_repo: SampleQueryRepositoryInterface = SampleQueryRepository(),
     ):
         self.vector_db_path = vector_db_path
         self.model_name = model_name
