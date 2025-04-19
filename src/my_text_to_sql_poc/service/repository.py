@@ -7,20 +7,34 @@ from loguru import logger
 class TableMetadataRepositoryInterface(ABC):
     @abstractmethod
     def get(self, table_names: list[str]) -> dict[str, str]:
+        """
+        Args:
+            table_names (list[str]): テーブル名のリスト
+        Returns:
+            dict[str, str]: テーブル名をキー、テーブルメタデータを値とする辞書
+        """
         pass
 
     @abstractmethod
     def put(self, table_name: str, metadata: str) -> None:
+        """テーブルメタデータを保存する"""
         pass
 
 
 class SampleQueryRepositoryInterface(ABC):
     @abstractmethod
     def get(self, query_names: list[str]) -> dict[str, str]:
+        """サンプルクエリを取得する
+        Args:
+            query_names (list[str]): サンプルクエリ名のリスト
+        Returns:
+            dict[str, str]: サンプルクエリ名をキー、サンプルクエリ文字列を値とする辞書
+        """
         pass
 
     @abstractmethod
     def put(self, query_name: str, query: str) -> None:
+        """サンプルクエリを保存する"""
         pass
 
 
