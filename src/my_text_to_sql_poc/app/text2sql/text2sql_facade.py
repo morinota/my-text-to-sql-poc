@@ -10,6 +10,12 @@ from omegaconf import OmegaConf
 from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
+from my_text_to_sql_poc.service.repository import (
+    SampleQueryRepository,
+    SampleQueryRepositoryInterface,
+    TableMetadataRepository,
+    TableMetadataRepositoryInterface,
+)
 
 PROMPT_CONFIG = OmegaConf.load("src/my_text_to_sql_poc/app/text2sql/generate_sql_prompt_ver2_jp.yaml")
 
@@ -30,13 +36,17 @@ class Text2SQLFacade:
         self,
         vector_db_path: str = "sample_vectorstore.duckdb",
         model_name: str = "text-embedding-3-small",
-        table_metadata_dir: Path = Path("data/table_metadata/"),
-        sample_query_dir: Path = Path("data/sample_queries/"),
+        table_metadata_repo: TableMetadataRepositoryInterface = TableMetadataRepository(
+            metadata_dir=Path("data/table_metadata/"),
+        ),
+        sample_query_repo: SampleQueryRepositoryInterface = SampleQueryRepository(
+            query_dir=Path("data/sample_queries/"),
+        ),
     ):
         self.vector_db_path = vector_db_path
         self.model_name = model_name
-        self.table_metadata_dir = table_metadata_dir
-        self.sample_query_dir = sample_query_dir
+        self.table_metadata_repo = table_metadata_repo
+        self.sample_query_repo = sample_query_repo
         self.model_gateway = ModelGateway()
 
         prompt_config = OmegaConf.load(self.REVIEWER_PROMPT_TEMPLATE)
@@ -70,9 +80,7 @@ class Text2SQLFacade:
             Path(doc.metadata["source"]).stem
             for doc in self._retrieve_relevant_docs(question, table_name="table_embeddings", k=k)
         ]
-
-        metadata_by_table = self._load_selected_table_metadata(retrieved_table_names)
-        return metadata_by_table
+        return self.table_metadata_repo.get(retrieved_table_names)
 
     def retrieve_related_sample_queries(self, question: str, k: int = 20) -> dict[str, str]:
         """質問に関連するサンプルクエリをretrieveして返す
@@ -82,9 +90,7 @@ class Text2SQLFacade:
             Path(doc.metadata["source"]).stem
             for doc in self._retrieve_relevant_docs(question, table_name="query_embeddings", k=k)
         ]
-
-        related_sample_queries = self._load_selected_sample_queries(retrieved_query_names)
-        return related_sample_queries
+        return self.sample_query_repo.get(retrieved_query_names)
 
     def text2sql(
         self,
@@ -108,40 +114,6 @@ class Text2SQLFacade:
         conn = duckdb.connect(database=self.vector_db_path)
         vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
         return vectorstore.similarity_search(question, k=k)
-
-    def _load_selected_table_metadata(self, table_names: list[str]) -> dict[str, str]:
-        """テーブルスメタデータを読み込んで、dict形式で返す"""
-        metadata_by_table = {}
-        available_tables = [file.stem for file in self.table_metadata_dir.glob("*.txt")]
-
-        for table_name in table_names:
-            file_path = self.table_metadata_dir / f"{table_name}.txt"
-            if table_name not in available_tables or not file_path.exists():
-                # raise FileNotFoundError(
-                #     f"Schema file not found for table: {table_name}\n Available tables: {available_tables}"
-                # )
-                logger.warning(f"Schema file not found for table: {table_name}\n Available tables: {available_tables}")
-                continue
-            with file_path.open("r") as file:
-                table_data = file.read()
-                metadata_by_table[table_name] = table_data
-        return metadata_by_table
-
-    def _load_selected_sample_queries(self, query_names: list[str]) -> dict[str, str]:
-        """サンプルクエリを読み込んで、dict形式で返す"""
-        sql_by_query_name = {}
-        available_queries = [file.stem for file in self.sample_query_dir.glob("*.sql")]
-
-        for query_name in query_names:
-            file_path = self.sample_query_dir / f"{query_name}.sql"
-            if query_name not in available_queries or not file_path.exists():
-                raise FileNotFoundError(
-                    f"Sample query file not found for query: {query_name}\n Available queries: {available_queries}"
-                )
-            with file_path.open("r") as file:
-                query_data = file.read()
-                sql_by_query_name[query_name] = query_data
-        return sql_by_query_name
 
     def _generate_sql_query(
         self, dialect: str, question: str, tables_metadata: str, related_sample_queries: str
