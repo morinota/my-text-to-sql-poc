@@ -90,6 +90,58 @@ class SampleQueryRepository(SampleQueryRepositoryInterface):
             file.write(query)
 
 
+class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
+    def __init__(self, db_path: str = "table_metadata_store.duckdb") -> None:
+        self.db_path = db_path
+
+    def get(self, table_names: list[str]) -> dict[str, str]:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        metadata_by_table = {}
+        for table_name in table_names:
+            query = f"SELECT metadata FROM table_metadata WHERE table_name = '{table_name}'"
+            result = conn.execute(query).fetchone()
+            if result:
+                metadata_by_table[table_name] = result[0]
+        conn.close()
+        return metadata_by_table
+
+    def put(self, table_name: str, metadata: str) -> None:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS table_metadata (table_name TEXT, metadata TEXT)")
+        conn.execute("INSERT INTO table_metadata (table_name, metadata) VALUES (?, ?)", (table_name, metadata))
+        conn.close()
+
+
+class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
+    def __init__(self, db_path: str = "sample_query_store.duckdb") -> None:
+        self.db_path = db_path
+
+    def get(self, query_names: list[str]) -> dict[str, str]:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        sql_by_query_name = {}
+        for query_name in query_names:
+            query = f"SELECT query FROM sample_queries WHERE query_name = '{query_name}'"
+            result = conn.execute(query).fetchone()
+            if result:
+                sql_by_query_name[query_name] = result[0]
+        conn.close()
+        return sql_by_query_name
+
+    def put(self, query_name: str, query: str) -> None:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS sample_queries (query_name TEXT, query TEXT)")
+        conn.execute("INSERT INTO sample_queries (query_name, query) VALUES (?, ?)", (query_name, query))
+        conn.close()
+
+
 class VectorStoreRepositoryInterface(ABC):
     @abstractmethod
     def retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list:
