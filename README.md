@@ -86,7 +86,7 @@ uv run python -m my_text_to_sql_poc.app.embed_summaries_batch \
 
 ```bash
 uv run python src/my_text_to_sql_poc/presentation/text2sql_cli.py \
-    --question "2023年の売上合計を知りたい" \
+    --question "コンテンツごとの課金獲得数を知りたい" \
     --dialect SQLite \
     --log-level INFO
 ```
