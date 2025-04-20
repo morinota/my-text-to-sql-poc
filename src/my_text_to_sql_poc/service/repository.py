@@ -176,7 +176,7 @@ class VectorStoreRepositoryInterface(ABC):
         pass
 
 
-class VectorStoreRepository(VectorStoreRepositoryInterface):
+class DuckDBVectorStoreRepository(VectorStoreRepositoryInterface):
     def __init__(
         self,
         # vector_db_path: str = "sample_vectorstore.duckdb",

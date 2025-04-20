@@ -13,11 +13,11 @@ from my_text_to_sql_poc.service.model_gateway import ModelGateway
 from my_text_to_sql_poc.service.repository import (
     DuckDBSampleQueryRepository,
     DuckDBTableMetadataRepository,
+    DuckDBVectorStoreRepository,
     FileSystemSampleQueryRepository,
     FileSystemTableMetadataRepository,
     SampleQueryRepositoryInterface,
     TableMetadataRepositoryInterface,
-    VectorStoreRepository,
     VectorStoreRepositoryInterface,
 )
 
@@ -38,7 +38,7 @@ class Text2SQLFacade:
 
     def __init__(
         self,
-        vector_store_repo: VectorStoreRepositoryInterface = VectorStoreRepository(),
+        vector_store_repo: VectorStoreRepositoryInterface = DuckDBVectorStoreRepository(),
         table_metadata_repo: TableMetadataRepositoryInterface = DuckDBTableMetadataRepository(),
         sample_query_repo: SampleQueryRepositoryInterface = DuckDBSampleQueryRepository(),
     ):
