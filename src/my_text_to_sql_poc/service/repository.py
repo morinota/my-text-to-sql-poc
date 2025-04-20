@@ -1,6 +1,8 @@
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import boto3
 import duckdb
 from langchain_community.vectorstores import DuckDB
 from langchain_openai import OpenAIEmbeddings
@@ -41,7 +43,7 @@ class SampleQueryRepositoryInterface(ABC):
         pass
 
 
-class TableMetadataRepository(TableMetadataRepositoryInterface):
+class FileSystemTableMetadataRepository(TableMetadataRepositoryInterface):
     def __init__(self, metadata_dir: Path = Path("data/table_metadata/")) -> None:
         self.metadata_dir = metadata_dir
 
@@ -65,7 +67,7 @@ class TableMetadataRepository(TableMetadataRepositoryInterface):
             file.write(metadata)
 
 
-class SampleQueryRepository(SampleQueryRepositoryInterface):
+class FileSystemSampleQueryRepository(SampleQueryRepositoryInterface):
     def __init__(self, query_dir: Path = Path("data/sample_queries/")) -> None:
         self.query_dir = query_dir
 
@@ -91,8 +93,21 @@ class SampleQueryRepository(SampleQueryRepositoryInterface):
 
 
 class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
-    def __init__(self, db_path: str = "table_metadata_store.duckdb") -> None:
-        self.db_path = db_path
+    def __init__(
+        self,
+        # db_path: str = "table_metadata_store.duckdb",
+        db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/table_metadata_store.duckdb",
+    ) -> None:
+        if db_path.startswith("s3://"):
+            s3 = boto3.client("s3")
+            bucket_name, key = db_path[5:].split("/", 1)
+            local_path = f"/tmp/{os.path.basename(key)}"
+            logger.info(f"Fetching the latest table metadata store from {db_path} to {local_path}...")
+            s3.download_file(bucket_name, key, local_path)
+            logger.info(f"Successfully fetched the latest table metadata store: {local_path}")
+            self.db_path = local_path
+        else:
+            self.db_path = db_path
 
     def get(self, table_names: list[str]) -> dict[str, str]:
         import duckdb
@@ -117,8 +132,21 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
 
 
 class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
-    def __init__(self, db_path: str = "sample_query_store.duckdb") -> None:
-        self.db_path = db_path
+    def __init__(
+        self,
+        # db_path: str = "sample_query_store.duckdb",
+        db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/sample_query_store.duckdb",
+    ) -> None:
+        if db_path.startswith("s3://"):
+            s3 = boto3.client("s3")
+            bucket_name, key = db_path[5:].split("/", 1)
+            local_path = f"/tmp/{os.path.basename(key)}"
+            logger.info(f"Fetching the latest sample query store from {db_path} to {local_path}...")
+            s3.download_file(bucket_name, key, local_path)
+            logger.info(f"Successfully fetched the latest sample query store: {local_path}")
+            self.db_path = local_path
+        else:
+            self.db_path = db_path
 
     def get(self, query_names: list[str]) -> dict[str, str]:
         import duckdb
@@ -151,10 +179,20 @@ class VectorStoreRepositoryInterface(ABC):
 class VectorStoreRepository(VectorStoreRepositoryInterface):
     def __init__(
         self,
-        vector_db_path: str = "sample_vectorstore.duckdb",
+        # vector_db_path: str = "sample_vectorstore.duckdb",
+        vector_db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/sample_vectorstore.duckdb",
         model_name: str = "text-embedding-3-small",
     ) -> None:
-        self.vector_db_path = vector_db_path
+        if vector_db_path.startswith("s3://"):
+            s3 = boto3.client("s3")
+            bucket_name, key = vector_db_path[5:].split("/", 1)
+            local_path = f"/tmp/{os.path.basename(key)}"
+            logger.info(f"Fetching the latest vector store from {vector_db_path} to {local_path}...")
+            s3.download_file(bucket_name, key, local_path)
+            logger.info(f"Successfully fetched the latest vector store: {local_path}")
+            self.vector_db_path = local_path
+        else:
+            self.vector_db_path = vector_db_path
         self.model_name = model_name
 
     def retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list:

@@ -13,9 +13,9 @@ from my_text_to_sql_poc.service.model_gateway import ModelGateway
 from my_text_to_sql_poc.service.repository import (
     DuckDBSampleQueryRepository,
     DuckDBTableMetadataRepository,
-    SampleQueryRepository,
+    FileSystemSampleQueryRepository,
+    FileSystemTableMetadataRepository,
     SampleQueryRepositoryInterface,
-    TableMetadataRepository,
     TableMetadataRepositoryInterface,
     VectorStoreRepository,
     VectorStoreRepositoryInterface,
