@@ -114,7 +114,17 @@ docker build -t text2sql-mcp .
 export OPENAI_API_KEY="your_openai_api_key_here"
 ```
 
-3. settings.jsonに必要な設定を追加します。
+3. 一旦Dockerコンテナをrunできることを確認しておく
+
+```bash
+docker run -it --rm \
+  -e OPENAI_API_KEY \
+  -e AWS_PROFILE=newspicks-development \
+  -v /Users/masato.morita/.aws:/root/.aws \
+  text2sql-mcp
+```
+
+4. settings.jsonに必要な設定を追加します。
 
 ```json
 "mcp": {
@@ -128,6 +138,10 @@ export OPENAI_API_KEY="your_openai_api_key_here"
                     "-i",
                     "-e",
                     "OPENAI_API_KEY",
+                    "-e",
+                    "AWS_PROFILE=newspicks-development",
+                    "-v", // ホストのAWS認証情報をコンテナにマウント
+                    "/Users/masato.morita/.aws:/root/.aws",
                     "text2sql-mcp"
                 ],
                 "env": {}
