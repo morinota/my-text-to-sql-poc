@@ -1,21 +1,12 @@
 from pathlib import Path
 
-import duckdb
-from langchain_community.docstore.document import Document
-from langchain_community.vectorstores import DuckDB
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 from omegaconf import OmegaConf
 from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
 from my_text_to_sql_poc.service.repository import (
-    DuckDBSampleQueryRepository,
-    DuckDBTableMetadataRepository,
-    DuckDBVectorStoreRepository,
-    FileSystemSampleQueryRepository,
-    FileSystemTableMetadataRepository,
     SampleQueryRepositoryInterface,
     TableMetadataRepositoryInterface,
     VectorStoreRepositoryInterface,
@@ -38,9 +29,9 @@ class Text2SQLFacade:
 
     def __init__(
         self,
-        vector_store_repo: VectorStoreRepositoryInterface = DuckDBVectorStoreRepository(),
-        table_metadata_repo: TableMetadataRepositoryInterface = DuckDBTableMetadataRepository(),
-        sample_query_repo: SampleQueryRepositoryInterface = DuckDBSampleQueryRepository(),
+        vector_store_repo: VectorStoreRepositoryInterface,
+        table_metadata_repo: TableMetadataRepositoryInterface,
+        sample_query_repo: SampleQueryRepositoryInterface,
     ):
         self.vector_store_repo = vector_store_repo
         self.table_metadata_repo = table_metadata_repo
