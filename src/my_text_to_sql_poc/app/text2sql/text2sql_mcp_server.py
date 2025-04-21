@@ -1,10 +1,19 @@
 from mcp.server.fastmcp import FastMCP
 
 from my_text_to_sql_poc.app.text2sql.text2sql_facade import Text2SQLFacade
+from my_text_to_sql_poc.service.repository import (
+    DuckDBSampleQueryRepository,
+    DuckDBTableMetadataRepository,
+    DuckDBVectorStoreRepository,
+)
 
 # FastMCPサーバーを初期化
 mcp = FastMCP("My Text2SQL Server")
-text2sql_facade = Text2SQLFacade()
+text2sql_facade = Text2SQLFacade(
+    vector_store_repo=DuckDBVectorStoreRepository(),
+    table_metadata_repo=DuckDBTableMetadataRepository(),
+    sample_query_repo=DuckDBSampleQueryRepository(),
+)
 
 
 @mcp.tool("retrieve_related_tables_and_queries_for_text2sql")
