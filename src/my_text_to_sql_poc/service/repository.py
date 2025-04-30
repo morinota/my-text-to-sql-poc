@@ -132,6 +132,16 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
 
 
 class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
+    """一旦sample_queriesテーブルを以下のようなスキーマで用意してみました。
+    ```sql
+    CREATE TABLE sample_queries (
+        query_name TEXT PRIMARY KEY,
+        query TEXT,
+        query_url TEXT,
+    );
+    ```
+    """
+
     def __init__(
         self,
         # db_path: str = "sample_query_store.duckdb",
@@ -165,8 +175,17 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
         import duckdb
 
         conn = duckdb.connect(self.db_path)
-        conn.execute("CREATE TABLE IF NOT EXISTS sample_queries (query_name TEXT, query TEXT)")
-        conn.execute("INSERT INTO sample_queries (query_name, query) VALUES (?, ?)", (query_name, query))
+        conn.execute("CREATE TABLE IF NOT EXISTS sample_queries (query_name TEXT, query TEXT, query_url TEXT)")
+        conn.execute(
+            """
+            INSERT INTO sample_queries (query_name, query, query_url)
+            VALUES (?, ?, ?)
+            ON CONFLICT (query_name) DO UPDATE SET
+                query = excluded.query,
+                query_url = excluded.query_url
+            """,
+            (query_name, query, query_url),
+        )
         conn.close()
 
 
