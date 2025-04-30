@@ -4,6 +4,7 @@ from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
+from my_text_to_sql_poc.service.repository import DuckDBTableMetadataRepository, TableMetadataRepositoryInterface
 
 PROMPT_TEMPLATE = """
 あなたはSQLテーブルの良質なメタデータを生成するデータアナリストです。
@@ -61,8 +62,11 @@ def generate_table_metadata(
     table_name: str,
     related_queries: list[str] = [],
     reffered_doc: str = "",
+    table_metadata_repo: TableMetadataRepositoryInterface = DuckDBTableMetadataRepository(),
 ) -> TableMetadataSchema:
-    """対象テーブルを利用してるサンプルクエリ達と、関連ドキュメントを元にテーブルのメタデータを生成する"""
+    """
+    対象テーブルを利用してるサンプルクエリ達と、関連ドキュメントを元にテーブルのメタデータを生成し、DuckDBに保存する
+    """
     prompt_template_str = PROMPT_TEMPLATE
     prompt_template = PromptTemplate(
         template=prompt_template_str,
@@ -75,7 +79,13 @@ def generate_table_metadata(
         reffered_doc=reffered_doc,
     )
 
-    return ModelGateway().generate_response_with_structured_output(formatted_prompt, TableMetadataSchema)
+    table_metadata = ModelGateway().generate_response_with_structured_output(formatted_prompt, TableMetadataSchema)
+
+    # Save to DuckDB using the provided repository
+    if table_metadata_repo:
+        table_metadata_repo.put(table_name, table_metadata.model_dump_json(indent=2))
+
+    return table_metadata
 
 
 if __name__ == "__main__":
