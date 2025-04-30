@@ -1114,6 +1114,7 @@ dependencies = [
     { name = "mcp" },
     { name = "omegaconf" },
     { name = "pandas" },
+    { name = "pandera" },
     { name = "polars" },
     { name = "sentence-transformers" },
     { name = "smart-open", extra = ["s3"] },
@@ -1151,6 +1152,7 @@ requires-dist = [
     { name = "mcp", specifier = "~=1.6.0" },
     { name = "omegaconf", specifier = "~=2.3.0" },
     { name = "pandas", specifier = "~=2.2.3" },
+    { name = "pandera", specifier = ">=0.23.1" },
     { name = "polars" },
     { name = "sentence-transformers", specifier = "~=3.2.1" },
     { name = "smart-open", extras = ["s3"], specifier = ">=7.1.0" },
@@ -1430,6 +1432,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/20/e8/45a05d9c39d2cea61ab175dbe6a2de1d05b679e8de2011da4ee190d7e748/pandas-2.2.3-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:6dfcb5ee8d4d50c06a51c2fffa6cff6272098ad6540aed1a76d15fb9318194d8", size = 16359235 },
     { url = "https://files.pythonhosted.org/packages/1d/99/617d07a6a5e429ff90c90da64d428516605a1ec7d7bea494235e1c3882de/pandas-2.2.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:062309c1b9ea12a50e8ce661145c6aab431b1e99530d3cd60640e255778bd43a", size = 14056756 },
     { url = "https://files.pythonhosted.org/packages/29/d4/1244ab8edf173a10fd601f7e13b9566c1b525c4f365d6bee918e68381889/pandas-2.2.3-cp312-cp312-win_amd64.whl", hash = "sha256:59ef3764d0fe818125a5097d2ae867ca3fa64df032331b7e0917cf5d7bf66b13", size = 11504248 },
+]
+
+[[package]]
+name = "pandera"
+version = "0.23.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "pydantic" },
+    { name = "typeguard" },
+    { name = "typing-inspect" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/1a/bcb3daa41bf6a46dc7c218cb0558922f1e711176bbb4ce649ed610a35f3f/pandera-0.23.1.tar.gz", hash = "sha256:2afed504ad61bbd2960dc7f85dd6be0b28d230a626f392b8ba05c291b970ae06", size = 513325 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/9e/79bb285d4dbee32f4786b659bfbddb2d56edf3c9bc2b7ed16474903584ed/pandera-0.23.1-py3-none-any.whl", hash = "sha256:37f75cfb5e34db88afc07adf3ea07ba8738bca709f0e67799c8f1b2fc6b9c977", size = 264213 },
 ]
 
 [[package]]
@@ -2444,6 +2463,18 @@ version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/06/00/59500052cb1cf8cf5316be93598946bc451f14072c6ff256904428eaf03c/triton-3.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8d9b215efc1c26fa7eefb9a157915c92d52e000d2bf83e5f69704047e63f125c", size = 253159365 },
+]
+
+[[package]]
+name = "typeguard"
+version = "4.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/60/8cd6a3d78d00ceeb2193c02b7ed08f063d5341ccdfb24df88e61f383048e/typeguard-4.4.2.tar.gz", hash = "sha256:a6f1065813e32ef365bc3b3f503af8a96f9dd4e0033a02c28c4a4983de8c6c49", size = 75746 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/4b/9a77dc721aa0b7f74440a42e4ef6f9a4fae7324e17f64f88b96f4c25cc05/typeguard-4.4.2-py3-none-any.whl", hash = "sha256:77a78f11f09777aeae7fa08585f33b5f4ef0e7335af40005b0c422ed398ff48c", size = 35801 },
 ]
 
 [[package]]
