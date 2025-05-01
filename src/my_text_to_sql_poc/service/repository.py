@@ -42,6 +42,16 @@ class SampleQueryRepositoryInterface(ABC):
         """サンプルクエリを保存する"""
         pass
 
+    @abstractmethod
+    def retrieve_by_table_name(self, table_name: str) -> dict[str, str]:
+        """特定のテーブルが参照されているサンプルクエリ一覧を取得する
+        Args:
+            table_name (str): テーブル名
+        Returns:
+            dict[str, str]: サンプルクエリ名をキー、サンプルクエリ文字列を値とする辞書
+        """
+        pass
+
 
 class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
     """一旦table_metadataテーブルを以下のようなスキーマで用意してみました。
@@ -147,6 +157,17 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
             (query_name, query, query_url),
         )
         conn.close()
+
+    def retrieve_by_table_name(self, table_name: str) -> dict[str, str]:
+        conn = duckdb.connect(self.db_path)
+        query = """
+            SELECT query_name, query
+            FROM sample_queries
+            WHERE lower(query) LIKE '%' || lower(?) || '%'
+        """
+        results = conn.execute(query, (table_name,)).fetchall()
+        conn.close()
+        return {row[0]: row[1] for row in results}
 
 
 class VectorStoreRepositoryInterface(ABC):
