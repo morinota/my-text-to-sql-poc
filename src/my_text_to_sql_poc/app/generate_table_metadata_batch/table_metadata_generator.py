@@ -1,10 +1,15 @@
-from pathlib import Path
-
+import typer
 from langchain_core.prompts import PromptTemplate
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from my_text_to_sql_poc.service.model_gateway import ModelGateway
-from my_text_to_sql_poc.service.repository import DuckDBTableMetadataRepository, TableMetadataRepositoryInterface
+from my_text_to_sql_poc.service.repository import (
+    DuckDBSampleQueryRepository,
+    DuckDBTableMetadataRepository,
+    SampleQueryRepositoryInterface,
+    TableMetadataRepositoryInterface,
+)
 
 PROMPT_TEMPLATE = """
 あなたはSQLテーブルの良質なメタデータを生成するデータアナリストです。
@@ -58,55 +63,74 @@ class TableMetadataSchema(BaseModel):
     )
 
 
-def generate_table_metadata(
-    table_name: str,
-    related_queries: list[str] = [],
-    reffered_doc: str = "",
-    table_metadata_repo: TableMetadataRepositoryInterface = DuckDBTableMetadataRepository(),
-) -> TableMetadataSchema:
-    """
-    対象テーブルを利用してるサンプルクエリ達と、関連ドキュメントを元にテーブルのメタデータを生成し、DuckDBに保存する
-    """
-    prompt_template_str = PROMPT_TEMPLATE
-    prompt_template = PromptTemplate(
-        template=prompt_template_str,
-        input_variables=["table_name", "audit_logs", "reffered_doc"],
-    )
+class TableMetadataGenerator:
+    def __init__(
+        self,
+        table_metadata_repo: TableMetadataRepositoryInterface = DuckDBTableMetadataRepository(
+            "/tmp/table_metadata_store.duckdb"
+        ),
+        sample_query_repo: SampleQueryRepositoryInterface = DuckDBSampleQueryRepository(
+            "/tmp/sample_query_store.duckdb"
+        ),
+    ):
+        self._table_metadata_repo = table_metadata_repo
+        self._sample_query_repo = sample_query_repo
+        self._prompt_template = PromptTemplate(
+            template=PROMPT_TEMPLATE,
+            input_variables=["table_name", "audit_logs", "reffered_doc"],
+        )
 
-    formatted_prompt = prompt_template.format(
-        table_name=table_name,
-        audit_logs="\n\n".join(related_queries),
-        reffered_doc=reffered_doc,
-    )
+    def generate_table_metadata(
+        self,
+        table_name: str,
+        reffered_doc: str | None = None,
+    ) -> None:
+        """
+        対象テーブルを利用してるサンプルクエリ達と、関連ドキュメントを元にテーブルのメタデータを生成し、DuckDBに保存する
+        """
+        reffered_query_map = self._sample_query_repo.retrieve_by_table_name(table_name)
+        logger.info(
+            f"""
+            対象テーブル {table_name} を利用しているサンプルクエリが {len(reffered_query_map)} 件見つかりました。
+            (LLM呼び出しのtoken数制限に引っかかるのを避けるため、サンプルクエリは最大100件までプロンプトに含めます)
+            """
+        )
 
-    table_metadata = ModelGateway().generate_response_with_structured_output(formatted_prompt, TableMetadataSchema)
+        reffered_querys = list(reffered_query_map.values())[0:100]
+        formatted_prompt = self._prompt_template.format(
+            table_name=table_name,
+            audit_logs="\n\n".join(reffered_querys),
+            reffered_doc=reffered_doc,
+        )
 
-    # Save to DuckDB using the provided repository
-    if table_metadata_repo:
-        table_metadata_repo.put(table_name, table_metadata.model_dump_json(indent=2))
+        table_metadata = ModelGateway().generate_response_with_structured_output(
+            formatted_prompt,
+            TableMetadataSchema,
+        )
+        logger.info(f"Generated table metadata: {table_metadata.model_dump_json(indent=2)}")
 
-    return table_metadata
+        self._table_metadata_repo.put(table_name, table_metadata.model_dump_json(indent=2))
+
+
+app = typer.Typer(pretty_exceptions_enable=False)
+
+
+@app.command()
+def main(
+    target_table: list[str] = typer.Option(
+        ...,
+        help="""
+        LLMにSQLクエリ履歴からメタデータを生成させたいテーブル名を指定する。複数テーブルを同時に指定可能。
+        指定方法: --target-table table_name1 --target-table table_name2 --target-table table_name3
+        """,
+    ),
+):
+    table_metadata_generator = TableMetadataGenerator()
+    for table_name in target_table:
+        logger.info(f"=============={table_name}のテーブルメタデータを生成します=================")
+        table_metadata_generator.generate_table_metadata(table_name=table_name)
+        logger.info(f"=============={table_name}のテーブルメタデータを生成しました===============")
 
 
 if __name__ == "__main__":
-    # Arrange
-    table_name = "for_analysis_kikuchi_subscribe_all_list_comp_with_full_data"
-    sample_queries_dir = Path("data/sample_queries")
-    reffered_doc_path = Path(f"data/kikuchi_table_docs/{table_name}.csv")
-    sample_queris = [file.read_text() for file in sample_queries_dir.glob("*.sql")]
-    related_queries = [query for query in sample_queris if table_name in query]
-    print(related_queries)
-    reffered_doc = reffered_doc_path.read_text()
-    print(reffered_doc)
-
-    # Act
-    table_metadata = generate_table_metadata(
-        table_name,
-        related_queries[0:100],  # input tokenのサイズ制限のため、100件までにしておく
-        reffered_doc,
-    )
-
-    # Assert
-    metadata_json = table_metadata.model_dump_json(indent=2)
-    print(metadata_json)
-    Path(f"temp_table_metadata_{table_name}.json").write_text(metadata_json)
+    app()
