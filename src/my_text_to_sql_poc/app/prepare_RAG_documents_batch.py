@@ -1,5 +1,6 @@
 import re
 
+import typer
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -127,9 +128,8 @@ class RAGDocumentPreparer:
         return response_obj.model_dump_json(indent=2)
 
     def _generate_query_summary(self, query: str, related_tables: set[str]) -> str:
-        table_schemas = "\n\n".join(
-            [self._table_metadata_repository.get([table]).get(table, "") for table in related_tables]
-        )
+        table_metadata_by_name = self._table_metadata_repository.get(list(related_tables))
+        table_schemas = "\n\n".join([table_metadata for _, table_metadata in table_metadata_by_name.values()])
 
         formatted_prompt = PROMPT_SUMMARIZE_QUERY.format(
             query=query,
@@ -141,19 +141,38 @@ class RAGDocumentPreparer:
         return response_obj.model_dump_json(indent=2)
 
     def _extract_related_tables(self, query: str) -> set[str]:
-        """SQLクエリから関連するテーブル名を抽出する"""
-        # FROM、JOINキーワードの後に続くテーブル名を正規表現で取得(スキーマを含む)
-        TABLE_PATTERN = re.compile(r"(?:FROM|JOIN)\s+(\w+(?:\.\w+)?)", re.IGNORECASE)
-        # CTE(Common Table Expression, with句で定義される一時テーブル)を除外
-        CTE_PATTERN = re.compile(r"WITH\s+(\w+)\s+AS", re.IGNORECASE)
-        table_names = set()
+        """SQLクエリ内で使われてるテーブル名を抽出する"""
+        # FROMもしくはJOIN句の後に続くテーブル名を取得してる
+        table_extract_pattern = re.compile(r"(?:FROM|JOIN)\s+(\w+(?:\.\w+)?)", re.IGNORECASE)
+        extracted_tables = set(table_extract_pattern.findall(query))
 
-        matche_tables = set(TABLE_PATTERN.findall(query))
-        cte_tables = set(CTE_PATTERN.findall(query))
-        for match_table in matche_tables:
-            # CTEの場合はスキップ
-            if match_table in cte_tables:
+        # CTE(Common Table Expression, with句で定義される一時テーブル)が紛らわしいので除外したい
+        cte_extract_pattern = re.compile(r"WITH\s+(\w+)\s+AS", re.IGNORECASE)
+        extracted_ctes = set(cte_extract_pattern.findall(query))
+
+        table_names = set()
+        for match_table in extracted_tables:
+            # CTEに含まれる場合はスキップ
+            if match_table in extracted_ctes:
                 continue
             table_names.add(match_table.lower())  # 重複テーブル名を避けるために小文字化
 
         return table_names
+
+
+app = typer.Typer(pretty_exceptions_enable=False)
+
+
+@app.command()
+def main() -> None:
+    rag_document_preparer = RAGDocumentPreparer()
+
+    logger.info("Registering table metadata...")
+    rag_document_preparer.register_table_metadata()
+    logger.info("Registering sample queries...")
+    rag_document_preparer.register_sample_queries()
+    logger.info("Registration completed.")
+
+
+if __name__ == "__main__":
+    app()
