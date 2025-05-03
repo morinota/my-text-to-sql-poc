@@ -98,8 +98,6 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
             self.db_path = db_path
 
     def get(self, table_names: list[str]) -> dict[str, str]:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         metadata_by_table = {}
         for table_name in table_names:
@@ -111,16 +109,12 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
         return metadata_by_table
 
     def put(self, table_name: str, metadata: str) -> None:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         conn.execute("CREATE TABLE IF NOT EXISTS table_metadata (table_name TEXT, metadata TEXT)")
         conn.execute("INSERT INTO table_metadata (table_name, metadata) VALUES (?, ?)", (table_name, metadata))
         conn.close()
 
     def get_all(self) -> dict[str, str]:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         query = "SELECT table_name, metadata FROM table_metadata"
         results = conn.execute(query).fetchall()
@@ -156,8 +150,6 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
             self.db_path = db_path
 
     def get(self, query_names: list[str]) -> dict[str, str]:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         sql_by_query_name = {}
         for query_name in query_names:
@@ -169,8 +161,6 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
         return sql_by_query_name
 
     def put(self, query_name: str, query: str, query_url: str) -> None:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         conn.execute("CREATE TABLE IF NOT EXISTS sample_queries (query_name TEXT, query TEXT, query_url TEXT)")
         conn.execute(
@@ -197,8 +187,6 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
         return {row[0]: row[1] for row in results}
 
     def get_all(self) -> dict[str, str]:
-        import duckdb
-
         conn = duckdb.connect(self.db_path)
         query = "SELECT query_name, query FROM sample_queries"
         results = conn.execute(query).fetchall()
