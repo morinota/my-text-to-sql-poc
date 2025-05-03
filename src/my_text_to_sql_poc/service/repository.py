@@ -25,6 +25,15 @@ class TableMetadataRepositoryInterface(ABC):
         """テーブルメタデータを保存する"""
         pass
 
+    @abstractmethod
+    def get_all(self) -> dict[str, str]:
+        """
+        すべてのテーブルメタデータを取得する
+        Returns:
+            dict[str, str]: テーブル名をキー、テーブルメタデータを値とする辞書
+        """
+        pass
+
 
 class SampleQueryRepositoryInterface(ABC):
     @abstractmethod
@@ -52,6 +61,15 @@ class SampleQueryRepositoryInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_all(self) -> dict[str, str]:
+        """
+        すべてのサンプルクエリを取得する
+        Returns:
+            dict[str, str]: サンプルクエリ名をキー、サンプルクエリ文字列を値とする辞書
+        """
+        pass
+
 
 class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
     """一旦table_metadataテーブルを以下のようなスキーマで用意してみました。
@@ -65,8 +83,8 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
 
     def __init__(
         self,
-        # db_path: str = "table_metadata_store.duckdb",
-        db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/table_metadata_store.duckdb",
+        db_path: str = "table_metadata_store.duckdb",
+        # db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/table_metadata_store.duckdb",
     ) -> None:
         if db_path.startswith("s3://"):
             s3 = boto3.client("s3")
@@ -100,6 +118,15 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
         conn.execute("INSERT INTO table_metadata (table_name, metadata) VALUES (?, ?)", (table_name, metadata))
         conn.close()
 
+    def get_all(self) -> dict[str, str]:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        query = "SELECT table_name, metadata FROM table_metadata"
+        results = conn.execute(query).fetchall()
+        conn.close()
+        return {row[0]: row[1] for row in results}
+
 
 class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
     """一旦sample_queriesテーブルを以下のようなスキーマで用意してみました。
@@ -114,8 +141,8 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
 
     def __init__(
         self,
-        # db_path: str = "sample_query_store.duckdb",
-        db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/sample_query_store.duckdb",
+        db_path: str = "sample_query_store.duckdb",
+        # db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/sample_query_store.duckdb",
     ) -> None:
         if db_path.startswith("s3://"):
             s3 = boto3.client("s3")
@@ -169,17 +196,36 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
         conn.close()
         return {row[0]: row[1] for row in results}
 
+    def get_all(self) -> dict[str, str]:
+        import duckdb
+
+        conn = duckdb.connect(self.db_path)
+        query = "SELECT query_name, query FROM sample_queries"
+        results = conn.execute(query).fetchall()
+        conn.close()
+        return {row[0]: row[1] for row in results}
+
 
 class VectorStoreRepositoryInterface(ABC):
     @abstractmethod
     def retrieve_relevant_docs(self, question: str, table_name: str, k: int = 5) -> list:
         pass
 
+    @abstractmethod
+    def put(self, doc_id: str, document: str, table_name: str) -> None:
+        """
+        Args:
+            doc_id (str): ドキュメントの一意の識別子
+            document (str): 保存するドキュメントの内容
+            table_name (str): ドキュメントを保存するベクトルDBのテーブル名
+        """
+        pass
+
 
 class DuckDBVectorStoreRepository(VectorStoreRepositoryInterface):
     def __init__(
         self,
-        # vector_db_path: str = "sample_vectorstore.duckdb",
+        # vector_db_path: str = "/tmp/sample_vectorstore.duckdb",
         vector_db_path: str = "s3://staging-newspicks-datalake-mart/tmp/text2sql_poc/sample_vectorstore.duckdb",
         model_name: str = "text-embedding-3-small",
     ) -> None:
@@ -200,3 +246,10 @@ class DuckDBVectorStoreRepository(VectorStoreRepositoryInterface):
         conn = duckdb.connect(database=self.vector_db_path)
         vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
         return vectorstore.similarity_search(question, k=k)
+
+    def put(self, doc_id: str, document: str, table_name: str) -> None:
+        embeddings = OpenAIEmbeddings(model=self.model_name)
+        conn = duckdb.connect(database=self.vector_db_path)
+        vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
+        vectorstore.add_texts([document], metadatas=[{"doc_id": doc_id}])
+        conn.close()
