@@ -34,6 +34,15 @@ class TableMetadataRepositoryInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def put_bulk(self, items: list[tuple[str, str]]) -> None:
+        """
+        テーブルメタデータを一括保存する
+        Args:
+            items (list of (table_name, metadata)): 保存対象
+        """
+        pass
+
 
 class SampleQueryRepositoryInterface(ABC):
     @abstractmethod
@@ -67,6 +76,15 @@ class SampleQueryRepositoryInterface(ABC):
         すべてのサンプルクエリを取得する
         Returns:
             dict[str, str]: サンプルクエリ名をキー、サンプルクエリ文字列を値とする辞書
+        """
+        pass
+
+    @abstractmethod
+    def put_bulk(self, items: list[tuple[str, str, str]]) -> None:
+        """
+        サンプルクエリを一括保存する
+        Args:
+            items (list of (query_name, query, query_url)): 保存対象
         """
         pass
 
@@ -120,6 +138,12 @@ class DuckDBTableMetadataRepository(TableMetadataRepositoryInterface):
         results = conn.execute(query).fetchall()
         conn.close()
         return {row[0]: row[1] for row in results}
+
+    def put_bulk(self, items: list[tuple[str, str]]) -> None:
+        conn = duckdb.connect(self.db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS table_metadata (table_name TEXT, metadata TEXT)")
+        conn.executemany("INSERT INTO table_metadata (table_name, metadata) VALUES (?, ?)", items)
+        conn.close()
 
 
 class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
@@ -193,6 +217,21 @@ class DuckDBSampleQueryRepository(SampleQueryRepositoryInterface):
         conn.close()
         return {row[0]: row[1] for row in results}
 
+    def put_bulk(self, items: list[tuple[str, str, str]]) -> None:
+        conn = duckdb.connect(self.db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS sample_queries (query_name TEXT, query TEXT, query_url TEXT)")
+        conn.executemany(
+            """
+            INSERT INTO sample_queries (query_name, query, query_url)
+            VALUES (?, ?, ?)
+            ON CONFLICT (query_name) DO UPDATE SET
+                query = excluded.query,
+                query_url = excluded.query_url
+            """,
+            items,
+        )
+        conn.close()
+
 
 class VectorStoreRepositoryInterface(ABC):
     @abstractmethod
@@ -206,6 +245,16 @@ class VectorStoreRepositoryInterface(ABC):
             doc_id (str): ドキュメントの一意の識別子
             document (str): 保存するドキュメントの内容
             table_name (str): ドキュメントを保存するベクトルDBのテーブル名
+        """
+        pass
+
+    @abstractmethod
+    def put_bulk(self, docs: list[tuple[str, str]], table_name: str) -> None:
+        """
+        ベクトルストアにドキュメントを一括保存する
+        Args:
+            docs: list of (doc_id, document)
+            table_name: str: ドキュメントを保存するベクトルDBのテーブル名
         """
         pass
 
@@ -240,4 +289,14 @@ class DuckDBVectorStoreRepository(VectorStoreRepositoryInterface):
         conn = duckdb.connect(database=self.vector_db_path)
         vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
         vectorstore.add_texts([document], metadatas=[{"doc_id": doc_id}])
+        conn.close()
+
+    def put_bulk(self, docs: list[tuple[str, str]], table_name: str) -> None:
+        embeddings = OpenAIEmbeddings(model=self.model_name)
+        conn = duckdb.connect(database=self.vector_db_path)
+        vectorstore = DuckDB(connection=conn, embedding=embeddings, table_name=table_name)
+        vectorstore.add_texts(
+            texts=[text for _, text in docs],
+            metadatas=[{"doc_id": doc_id} for doc_id, _ in docs],
+        )
         conn.close()
